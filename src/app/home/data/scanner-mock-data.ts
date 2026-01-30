@@ -7,6 +7,9 @@ import { WorkspaceInfoResponse, Domain, WorkspaceInfo } from '../models/scanner-
 
 // Domain definitions (Data Mesh architecture)
 export const MOCK_DOMAINS: Domain[] = [
+  // Special staging domain for unassigned workspaces
+  { id: 'UNASSIGNED', name: '⚠️ Unassigned Workspaces', description: 'Workspaces awaiting domain assignment', workspaceIds: [] },
+  
   // Top-level business domains
   { id: 'dom-sales', name: 'Sales & Revenue', description: 'Sales operations and revenue analytics', workspaceIds: [] },
   { id: 'dom-sales-na', name: 'Sales North America', description: 'North American sales division', parentDomainId: 'dom-sales', workspaceIds: [] },
@@ -64,6 +67,87 @@ const MOCK_USERS = {
  */
 export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
   workspaces: [
+    // ====== UNASSIGNED WORKSPACES (No Domain) ======
+    {
+      id: generateWorkspaceId(),
+      name: 'Legacy Reports Workspace',
+      type: 'Workspace',
+      state: 'Active',
+      isOnDedicatedCapacity: false,
+      capacityId: null,
+      domainId: null,  // UNASSIGNED
+      description: 'Old reports that need to be organized into a domain',
+      reports: [],
+      dashboards: [],
+      datasets: [],
+      dataflows: [],
+      datamarts: [],
+      users: []
+    },
+    {
+      id: generateWorkspaceId(),
+      name: 'Temporary Analysis',
+      type: 'Workspace',
+      state: 'Active',
+      isOnDedicatedCapacity: false,
+      capacityId: null,
+      domainId: null,  // UNASSIGNED
+      description: 'Temporary workspace for ad-hoc analysis',
+      reports: [],
+      dashboards: [],
+      datasets: [],
+      dataflows: [],
+      datamarts: [],
+      users: []
+    },
+    {
+      id: generateWorkspaceId(),
+      name: 'Uncategorized Data',
+      type: 'Workspace',
+      state: 'Active',
+      isOnDedicatedCapacity: false,
+      capacityId: null,
+      domainId: null,  // UNASSIGNED
+      description: 'Data sources awaiting classification',
+      reports: [],
+      dashboards: [],
+      datasets: [],
+      dataflows: [],
+      datamarts: [],
+      users: []
+    },
+    {
+      id: generateWorkspaceId(),
+      name: 'Test Environment',
+      type: 'Workspace',
+      state: 'Active',
+      isOnDedicatedCapacity: false,
+      capacityId: null,
+      domainId: null,  // UNASSIGNED
+      description: 'Development and testing workspace',
+      reports: [],
+      dashboards: [],
+      datasets: [],
+      dataflows: [],
+      datamarts: [],
+      users: []
+    },
+    {
+      id: generateWorkspaceId(),
+      name: 'Archive Candidates',
+      type: 'Workspace',
+      state: 'Active',
+      isOnDedicatedCapacity: false,
+      capacityId: null,
+      domainId: null,  // UNASSIGNED
+      description: 'Old workspaces to be archived or reassigned',
+      reports: [],
+      dashboards: [],
+      datasets: [],
+      dataflows: [],
+      datamarts: [],
+      users: []
+    },
     // ====== SALES & REVENUE DOMAIN ======
     {
       id: generateWorkspaceId(),

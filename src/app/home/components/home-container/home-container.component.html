@@ -48,6 +48,12 @@
         <span>🎯</span> {{ isolateMode ? 'Exit Focus' : 'Focus Mode' }}
       </button>
       
+      <button class="control-btn" (click)="toggleUnassignedOnly()" 
+              [class.active]="showUnassignedOnly" 
+              title="Show only unassigned workspaces for domain assignment">
+        <span>🏷️</span> {{ showUnassignedOnly ? 'Show All' : 'Unassigned' }}
+      </button>
+      
       <button class="control-btn" (click)="toggleFilterPanel()" title="Show filters">
         <span>🎛️</span> Filters
       </button>
@@ -64,6 +70,11 @@
     
     <div class="focus-active" *ngIf="shouldShowGraph && isolatedDomain">
       <span>✓</span> Showing: <strong>{{ getIsolatedDomainName() }}</strong> | Click workspace again to exit
+    </div>
+    
+    <!-- Unassigned Mode Instructions -->
+    <div class="focus-instructions" style="background: #FF9800;" *ngIf="shouldShowGraph && showUnassignedOnly">
+      <span>🏷️</span> Showing <strong>unassigned workspaces</strong> (orange) - Drag them into domains to assign
     </div>
     
     <!-- Filter Panel -->

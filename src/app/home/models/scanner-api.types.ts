@@ -293,4 +293,7 @@ export interface Domain {
   description?: string;
   parentDomainId?: string;
   workspaceIds: string[];
+  // 3D visualization properties
+  center?: { x: number; y: number; z: number };
+  radius?: number;
 }
