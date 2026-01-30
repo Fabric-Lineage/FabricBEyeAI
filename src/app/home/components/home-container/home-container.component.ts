@@ -1,25 +1,77 @@
+/**
+ * HomeContainerComponent - Main visualization component for PowerBEye
+ * 
+ * This component provides a 3D graph visualization of Microsoft Fabric workspaces,
+ * their artifacts (Lakehouses, Warehouses, Reports, Datasets, etc.), and lineage connections.
+ * 
+ * Key Features:
+ * - 3D force-directed graph using 3d-force-graph library
+ * - Domain clustering for visual organization
+ * - Advanced navigation: Focus Mode, Filters, Search
+ * - Interactive controls: Pause, Fog, Curved Links
+ * - Endorsement badges and sensitivity labels
+ * - Support for 23+ Microsoft Fabric artifact types
+ * 
+ * @author PowerBEye Contributors
+ * @version 2.0.0 - Microsoft Fabric Migration
+ */
+
 import { Component, ElementRef, ViewChild, OnInit, OnDestroy } from '@angular/core';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { Subject, forkJoin } from 'rxjs';
+import { take, takeUntil } from 'rxjs/operators';
+
+// 3D Graphics Libraries
+import * as THREE from 'three';
+import ForceGraph3D from '3d-force-graph';
+import SpriteText from 'three-spritetext';
+
+// Services
 import { HomeProxy } from '../../services/home-proxy.service';
 import { ScanService } from '../../services/scan.service';
-import ForceGraph3D from '3d-force-graph';
+import { AuthService } from 'src/app/services/auth.service';
+
+// Models
 import { Report, Dataset } from '../../models/dataModel';
 import { Link, LinkType, Node, NodeType } from '../../models/graphModels';
-import * as THREE from 'three';
-import { AuthService } from 'src/app/services/auth.service';
-import SpriteText from 'three-spritetext';
-import { take, takeUntil } from 'rxjs/operators';
-import { forkJoin, Subject } from 'rxjs';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import type { WorkspaceInfoResponse, Domain } from '../../models/scanner-api.types';
+
+// Data
+import { MOCK_SCANNER_RESPONSE, MOCK_DOMAINS } from '../../data/scanner-mock-data';
+
+// Dialogs
 import { ProgressBarDialogComponent } from 'src/app/components/progress-bar-dialog/progress-bar-dialog.component';
 import { LoginDialogComponent } from 'src/app/components/login-dialog/login-dialog.component';
 import { ErrorDialogComponent } from 'src/app/components/error-dialog/error-dialog.component';
 
-import { MOCK_WORKSPACES } from '../../data/mock-data';
-import { MOCK_SCANNER_RESPONSE, MOCK_DOMAINS } from '../../data/scanner-mock-data';
-import type { WorkspaceInfoResponse, Domain } from '../../models/scanner-api.types';
+// Constants
+const WORKSPACE_LIMIT: number = 100;
+const MAX_PARALLEL_API_CALLS: number = 16;
+const DOMAIN_BOUNDARY_SETTLE_TIME: number = 3000; // ms to wait for layout before drawing boundaries
 
-const WorkspaceLimit: number = 100;
-const maxParallelBEcalls: number = 16;
+// Graph Configuration Constants
+const NODE_SIZE_MULTIPLIER = 8;
+const WORKSPACE_NODE_VAL = 15;
+const ARTIFACT_NODE_VAL = 4;
+const LINK_CURVATURE_STRAIGHT = 0;
+const LINK_CURVATURE_CURVED = 0.25;
+const LINK_OPACITY_DEFAULT = 0.5;
+const CAMERA_ZOOM_DURATION_MS = 1000;
+const CAMERA_FOCUS_DISTANCE = 200;
+
+// Domain Clustering Constants
+const DOMAIN_CLUSTER_STRENGTH = 0.3;
+const DOMAIN_BOUNDARY_PADDING_MULTIPLIER = 1.5;
+const DOMAIN_BOUNDARY_OPACITY = 0.08;
+const DOMAIN_WIREFRAME_OPACITY = 0.3;
+const DOMAIN_LABEL_HEIGHT = 8;
+const DOMAIN_LABEL_OFFSET = 15;
+
+// Microsoft Fabric Brand Colors
+const COLOR_FABRIC_GREEN = '#107C10';
+const COLOR_FABRIC_BLUE = '#0078D4';
+const COLOR_CERTIFIED_GOLD = '#FFD700';
+const COLOR_FOCUS_MODE_GREEN = '#10B981';
 
 @Component({
   selector: 'home-container',
@@ -27,111 +79,225 @@ const maxParallelBEcalls: number = 16;
   styleUrls: ['./home-container.component.less']
 })
 export class HomeContainerComponent implements OnInit, OnDestroy {
-  public isScanTenantInProgress: boolean = false;
-  public shouldShowGraph = false;
+  // =================================================================
+  // CORE DATA PROPERTIES
+  // =================================================================
+  
+  /** Graph nodes (workspaces and artifacts) */
   public nodes: Node[] = [];
+  
+  /** Graph links (relationships between nodes) */
   public links: Link[] = [];
+  
+  /** Legacy report data (for backward compatibility) */
   public reports: Report[] = [];
+  
+  /** Legacy dataset data (for backward compatibility) */
   public datasets: Dataset[] = [];
+  
+  /** Microsoft Fabric domains for organization */
   public domains: Domain[] = [];
-  public workspaceMetadata: Map<string, any> = new Map(); // Store workspace-level metadata
+  
+  /** Additional workspace-level metadata storage */
+  public workspaceMetadata: Map<string, any> = new Map();
+  
+  // =================================================================
+  // UI STATE PROPERTIES
+  // =================================================================
+  
+  /** Whether to show the 3D graph (vs landing page) */
+  public shouldShowGraph = false;
+  
+  /** Whether a tenant scan is in progress */
+  public isScanTenantInProgress: boolean = false;
+  
+  /** Search filter text */
   public searchTerm: string = '';
-  public selectedNodeTypes: Set<NodeType> = new Set();
-  public selectedDomains: Set<string> = new Set();
-  private graphInstance: any = null;
-  private highlightNodes = new Set();
-  private highlightLinks = new Set();
-  private hoverNode: any = null;
-
-  // Advanced navigation features
+  
+  /** Scan progress percentage (0-100) */
+  public scanStatusPercent: number = 0;
+  
+  /** Whether user has permission to start scan */
+  public canStartScan: boolean = false;
+  
+  // =================================================================
+  // ADVANCED NAVIGATION FEATURES
+  // =================================================================
+  
+  /** Whether simulation is paused (for screenshot/analysis) */
   public simulationPaused: boolean = false;
+  
+  /** Link curvature (0=straight, 0.25=curved) */
   public linkCurvature: number = 0;
+  
+  /** Whether depth fog is enabled for 3D effect */
   public fogEnabled: boolean = false;
+  
+  /** Focus mode: click workspaces to isolate domains */
   public isolateMode: boolean = false;
+  
+  /** Whether the filter panel is visible */
   public showFilterPanel: boolean = false;
+  
+  /** Set of hidden domain IDs */
   public hiddenDomains: Set<string> = new Set();
+  
+  /** Currently isolated domain ID (null = none) */
   public isolatedDomain: string | null = null;
   
-  // Artifact type filters
+  // =================================================================
+  // FILTER PROPERTIES
+  // =================================================================
+  
+  /** Show/hide artifact type filters */
   public showWorkspaces: boolean = true;
   public showLakehouses: boolean = true;
   public showWarehouses: boolean = true;
   public showReports: boolean = true;
   public showDatasets: boolean = true;
   
-  // Link filters
+  /** Show/hide link type filters */
   public showCrossWorkspaceLinks: boolean = true;
   public showContainsLinks: boolean = true;
+  
+  /** Link opacity (0-100%) */
   public linkOpacity: number = 50;
   
-  // Domain boundary objects for show/hide
+  /** Legacy filter properties (kept for backward compatibility) */
+  public selectedNodeTypes: Set<NodeType> = new Set();
+  public selectedDomains: Set<string> = new Set();
+  
+  // =================================================================
+  // PRIVATE PROPERTIES
+  // =================================================================
+  
+  /** 3d-force-graph instance */
+  private graphInstance: any = null;
+  
+  /** Set of nodes to highlight on hover */
+  private highlightNodes = new Set();
+  
+  /** Set of links to highlight on hover */
+  private highlightLinks = new Set();
+  
+  /** Currently hovered node */
+  private hoverNode: any = null;
+  
+  /** Map of domain IDs to their boundary THREE.js objects */
   private domainBoundaryObjects: Map<string, THREE.Object3D[]> = new Map();
-
-  public canStartScan: boolean = false;
-  public scanStatusPercent: number = 0;
+  
+  /** Dialog reference for progress bar */
   private progressBarDialogRef: MatDialogRef<ProgressBarDialogComponent>;
+  
+  /** Subject for component cleanup */
   private destroy$: Subject<void> = new Subject();
-
+  
+  /** File input element reference */
   @ViewChild('filesInput', { static: true }) filesInput: ElementRef;
 
-  constructor (private proxy: HomeProxy,
+  // =================================================================
+  // LIFECYCLE METHODS
+  // =================================================================
+  
+  constructor(
+    private proxy: HomeProxy,
     private scanService: ScanService,
     private authService: AuthService,
-    private dialog: MatDialog) {
+    private dialog: MatDialog
+  ) {
+    // Check if user has scan permissions
     this.authService.getToken().subscribe((token: string) => {
       this.canStartScan = token.length > 0;
     });
   }
 
-  public ngOnInit (): void {
-    this.scanService.getLoadLineage().pipe(
-      takeUntil(this.destroy$)
-    )
-      .subscribe(workspaces => workspaces && workspaces.length > 0 ? this.loadLineage(workspaces) : null);
+  public ngOnInit(): void {
+    // Subscribe to lineage data from scan service
+    this.scanService.getLoadLineage()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(workspaces => {
+        if (workspaces && workspaces.length > 0) {
+          this.loadLineage(workspaces);
+        }
+      });
   }
 
-  public ngOnDestroy (): void {
+  public ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
-
-  public async startScan (): Promise<void> {
+  
+  // =================================================================
+  // SCANNING METHODS
+  // =================================================================
+  
+  /**
+   * Initiates a tenant-wide scan of Microsoft Fabric workspaces
+   * 
+   * This method triggers the Microsoft Fabric Scanner API to scan all workspaces
+   * in the tenant. It requires tenant admin permissions and shows a progress dialog
+   * while the scan is in progress. The scan fetches workspace metadata, artifacts,
+   * and lineage information for visualization.
+   * 
+   * Error handling:
+   * - 401: No tenant admin logged in - shows login dialog
+   * - 403: Invalid or expired token - prompts to refresh credentials
+   * 
+   * @throws {Error} When scanner API request fails
+   */
+  public async startScan(): Promise<void> {
     if (!this.canStartScan) {
       this.dialog.open(LoginDialogComponent);
       return;
     }
+    
     this.scanService.shouldStopScan = false;
     this.progressBarDialogRef = this.dialog.open(ProgressBarDialogComponent, { disableClose: true });
     this.isScanTenantInProgress = true;
+    
     try {
-      const resultObserable = await this.proxy.getModifedWorkspaces();
-      const result = await resultObserable.toPromise();
-      const workspacesIds = result.slice(0, maxParallelBEcalls * 100).map(workspace => workspace.Id);
+      const resultObservable = await this.proxy.getModifedWorkspaces();
+      const result = await resultObservable.toPromise();
+      const workspaceIds = result.slice(0, MAX_PARALLEL_API_CALLS * 100).map(workspace => workspace.Id);
 
-      this.getWorkspacesScanFilesParallel(workspacesIds);
-
+      this.getWorkspacesScanFilesParallel(workspaceIds);
       this.isScanTenantInProgress = false;
+      
     } catch (e) {
       switch (e.status) {
-        case 401: {
-          // TODO: show error "No tenant admin is logged in".
-          this.dialog.open(ErrorDialogComponent, { data: { title: 'Error 401', errorMessage: 'No tenant admin is logged in, please login as a tenant admin' } });
-          // alert('401 - No tenant admin is logged in');
+        case 401:
+          this.dialog.open(ErrorDialogComponent, { 
+            data: { 
+              title: 'Error 401', 
+              errorMessage: 'No tenant admin is logged in, please login as a tenant admin' 
+            } 
+          });
           break;
-        }
-        case 403: {
-          this.dialog.open(ErrorDialogComponent, { data: { title: 'Error 403', errorMessage: 'The token is not correct, please change the environment or refresh the token' } });
-          // TODO: show error "change the environment / refresh the token".
-          // alert('403 - change the environment / refresh the token');
+          
+        case 403:
+          this.dialog.open(ErrorDialogComponent, { 
+            data: { 
+              title: 'Error 403', 
+              errorMessage: 'The token is not correct, please change the environment or refresh the token' 
+            } 
+          });
           break;
-        }
       }
       this.progressBarDialogRef.close();
       this.isScanTenantInProgress = false;
     }
   }
 
-  public async getWorkspacesScanFiles (workspaceIds: string[]) {
+  /**
+   * Polls the Scanner API for workspace scan results
+   * 
+   * This method initiates a scan for the given workspaces and polls the status
+   * every 2 seconds until the scan completes. Updates the scan service with
+   * current status for progress tracking.
+   * 
+   * @param workspaceIds - Array of workspace GUIDs to scan
+   */
+  public async getWorkspacesScanFiles(workspaceIds: string[]): Promise<void> {
     let scanInfo = await this.proxy.getWorkspacesInfo(workspaceIds).toPromise();
 
     while (scanInfo.status !== 'Succeeded') {
@@ -147,11 +313,26 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     this.scanService.setScanInfoStatusChanged(this.scanService.scanInfoStatusByScanId);
   }
 
-  public sleep (ms) {
+  /**
+   * Utility method to pause execution for specified milliseconds
+   * Used for polling delays in scan operations
+   * 
+   * @param ms - Milliseconds to sleep
+   * @returns Promise that resolves after delay
+   */
+  public sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  public onAddFile (): void {
+  // =================================================================
+  // FILE HANDLING METHODS
+  // =================================================================
+  
+  /**
+   * Triggers the hidden file input for Scanner API JSON import
+   * Disabled during active scans to prevent data conflicts
+   */
+  public onAddFile(): void {
     if (this.isScanTenantInProgress) {
       return;
     }
@@ -159,7 +340,14 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     (this.filesInput.nativeElement as HTMLInputElement).click();
   }
 
-  public onFileAdded (): void {
+  /**
+   * Processes uploaded Scanner API JSON files
+   * 
+   * Reads one or more JSON files containing workspace scan results and loads
+   * them into the visualization. Files must match the WorkspaceInfoResponse format.
+   * Multiple files are processed sequentially.
+   */
+  public onFileAdded(): void {
     const files = (this.filesInput.nativeElement as HTMLInputElement).files;
 
     for (let i = 0; i < files.length; i++) {
@@ -175,13 +363,40 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     }
   }
 
+  // =================================================================
+  // DEMO MODE METHODS
+  // =================================================================
+  
+  /**
+   * Loads pre-configured demo data for testing and demonstration
+   * 
+   * Initializes the graph with mock Scanner API data including 50+ workspaces
+   * across 15 domains, demonstrating all 23 supported Fabric artifact types.
+   * Useful for testing features without tenant admin access.
+   */
   public loadDemoMode(): void {
-    // Load Scanner API format data
     this.domains = MOCK_DOMAINS;
     this.loadLineage(MOCK_SCANNER_RESPONSE.workspaces);
   }
 
-  private getNodeColor (nodeType: NodeType): string {
+  // =================================================================
+  // NODE STYLING METHODS - Colors and Icons
+  // =================================================================
+  
+  /**
+   * Maps Fabric artifact types to official color scheme
+   * 
+   * Returns colors based on Microsoft Fabric design system:
+   * - Workspace: Green (#107C10)
+   * - Data Storage (Lakehouse, Warehouse): Blues
+   * - Analytics (KQL, Eventstream): Purples/Magentas  
+   * - BI (Reports, Dashboards): Yellows/Oranges/Cyans
+   * - ML (Models, Experiments): Teals
+   * 
+   * @param nodeType - The Fabric artifact type
+   * @returns Hex color string
+   */
+  private getNodeColor(nodeType: NodeType): string {
     // Microsoft Fabric color scheme
     switch (nodeType) {
       case NodeType.Workspace: {
@@ -325,7 +540,30 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     return cube;
   }
 
-  private loadLineage (workspaces): void {
+  // =================================================================
+  // GRAPH VISUALIZATION - Main Data Loading and Processing
+  // =================================================================
+  
+  /**
+   * Processes workspace scan results and builds the graph structure
+   * 
+   * This is the CORE method that transforms Scanner API data into the 3D graph.
+   * It performs three passes:
+   * 
+   * PASS 1: Create workspace and artifact nodes (datasets, dataflows, reports, etc.)
+   * PASS 2: Build relationships and lineage between artifacts
+   * PASS 3: Apply domain clustering force for spatial organization
+   * 
+   * Supports 23 Microsoft Fabric artifact types including:
+   * - Traditional BI: Reports, Dashboards, Semantic Models
+   * - Data Integration: Dataflows, Pipelines
+   * - Data Engineering: Lakehouses, Warehouses, Notebooks, Spark Jobs
+   * - Real-Time Analytics: Eventstreams, Eventhouses, KQL Databases
+   * - Machine Learning: ML Models and Experiments
+   * 
+   * @param workspaces - Array of WorkspaceInfo objects from Scanner API
+   */
+  private loadLineage(workspaces): void {
     this.nodes = [];
     this.links = [];
     this.reports = [];
