@@ -73,6 +73,12 @@ const COLOR_FABRIC_BLUE = '#0078D4';
 const COLOR_CERTIFIED_GOLD = '#FFD700';
 const COLOR_FOCUS_MODE_GREEN = '#10B981';
 
+// Link Arrow Colors (improved visibility)
+const COLOR_ARROW_CROSS_WS = '#00BCF2';     // Bright cyan for cross-workspace
+const COLOR_ARROW_CONTAINS = '#A0A0A0';    // Gray for contains relationships
+const COLOR_FOCUS_MODE = '#107C10';        // Clickable workspaces in focus mode  
+const COLOR_ISOLATED = '#FFD700';          // Isolated domain highlight
+
 @Component({
   selector: 'home-container',
   templateUrl: './home-container.component.html',
@@ -182,6 +188,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   
   /** Currently hovered node */
   private hoverNode: any = null;
+  
+  /** Focused node that stays highlighted after click */
+  private focusedNode: any = null;
   
   /** Map of domain IDs to their boundary THREE.js objects */
   private domainBoundaryObjects: Map<string, THREE.Object3D[]> = new Map();
@@ -985,10 +994,13 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       .linkWidth((link: any) => link.type === LinkType.CrossWorkspace ? 2 : 0.5)
       .d3Force('domainCluster', this.createDomainClusterForce())
       .linkOpacity(0.5)
-      // Add directional arrows for cross-workspace links
-      .linkDirectionalArrowLength(5)
+      // Add directional arrows with improved visibility
+      .linkDirectionalArrowLength(6)
       .linkDirectionalArrowRelPos(1)
-      .linkDirectionalArrowColor((link: any) => link.type === LinkType.CrossWorkspace ? '#107C10' : '#888')
+      .linkDirectionalArrowColor((link: any) => {
+        if (link.type === LinkType.CrossWorkspace) return COLOR_ARROW_CROSS_WS;
+        return COLOR_ARROW_CONTAINS;
+      })
       // Rich HTML tooltips
       .nodeLabel((node: any) => {
         const typeLabel = NodeType[node.type];
@@ -1024,19 +1036,22 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           </div>
         `;
       })
-      // Hover highlighting
+      // Hover highlighting (or keep focused node highlighted)
       .onNodeHover((node: any) => {
         this.highlightNodes.clear();
         this.highlightLinks.clear();
         
-        if (node) {
-          this.highlightNodes.add(node);
-          // Highlight connected nodes
+        // Use focused node if no hover, otherwise use hover
+        const activeNode = node || this.focusedNode;
+        
+        if (activeNode) {
+          this.highlightNodes.add(activeNode);
+          // Highlight connected nodes and links
           this.links.forEach(link => {
-            if (link.source === node.id || link.target === node.id) {
+            if (link.source === activeNode.id || link.target === activeNode.id) {
               this.highlightLinks.add(link);
               const connectedNode = this.nodes.find(n => 
-                n.id === (link.source === node.id ? link.target : link.source)
+                n.id === (link.source === activeNode.id ? link.target : link.source)
               );
               if (connectedNode) this.highlightNodes.add(connectedNode);
             }
@@ -1062,6 +1077,33 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           return;
         }
         
+        // Toggle focus: click same node to clear, click different to focus
+        if (this.focusedNode === node) {
+          this.focusedNode = null;
+          this.highlightNodes.clear();
+          this.highlightLinks.clear();
+          this.updateHighlight();
+          return;
+        }
+        
+        // Set focused node and keep highlight
+        this.focusedNode = node;
+        this.highlightNodes.clear();
+        this.highlightLinks.clear();
+        this.highlightNodes.add(node);
+        
+        // Highlight connected nodes and links
+        this.links.forEach(link => {
+          if (link.source === node.id || link.target === node.id) {
+            this.highlightLinks.add(link);
+            const connectedNode = this.nodes.find(n => 
+              n.id === (link.source === node.id ? link.target : link.source)
+            );
+            if (connectedNode) this.highlightNodes.add(connectedNode);
+          }
+        });
+        this.updateHighlight();
+        
         if (node.type === NodeType.Workspace) {
           // Fly camera to focus on the workspace
           const distance = 200;
@@ -1078,6 +1120,15 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           window.open(`${url}/groups/${node.id}/lineage`, '_blank');
           return;
         }
+        
+        // For artifacts, zoom to node
+        const distance = 150;
+        const distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
+        graph.cameraPosition(
+          { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
+          node,
+          800
+        );
 
         if (node.type === NodeType.SemanticModel) {
           const url: string = this.proxy.getEnvironment().url;
@@ -1167,12 +1218,19 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         return this.getNodeColor(node.type as NodeType);
       })
       .linkColor((link: any) => {
-        // Dim non-highlighted links
-        if (this.highlightLinks.size > 0 && !this.highlightLinks.has(link)) {
-          return 'rgba(100,100,100,0.2)';
+        // Highlight active links with bright colors
+        if (this.highlightLinks.size > 0) {
+          if (this.highlightLinks.has(link)) {
+            // Bright colors for highlighted links
+            if (link.type === LinkType.CrossWorkspace) return COLOR_ARROW_CROSS_WS;
+            return 'rgba(200,200,200,0.8)';
+          }
+          // Dim non-highlighted links
+          return 'rgba(100,100,100,0.1)';
         }
-        // Fabric green for cross-workspace, subtle gray for contains
-        return link.type === LinkType.CrossWorkspace ? '#107C10' : 'rgba(150,150,150,0.3)';
+        // Default colors when nothing highlighted
+        if (link.type === LinkType.CrossWorkspace) return 'rgba(0,188,242,0.4)';
+        return 'rgba(150,150,150,0.2)';
       });
 
     this.shouldShowGraph = true;
@@ -1505,6 +1563,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     this.hiddenDomains.clear();
     this.isolatedDomain = null;
     this.isolateMode = false;
+    this.focusedNode = null;
+    this.highlightNodes.clear();
+    this.highlightLinks.clear();
     this.showWorkspaces = true;
     this.showLakehouses = true;
     this.showWarehouses = true;
