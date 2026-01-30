@@ -926,7 +926,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     }
 
     // PASS 4: Limit workspaces if needed
-    if (numberOfWorkspaces > WorkspaceLimit) {
+    if (numberOfWorkspaces > WORKSPACE_LIMIT) {
       const workspaceNodes = this.nodes.filter(node => node.type === NodeType.Workspace);
       const limitedWorkspaceInfo = workspaceNodes
         .sort((a, b) => {
@@ -934,7 +934,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           const bCount = (b.crossDownstreamWSIds?.length || 0) + (b.crossUpstreamWSIds?.length || 0);
           return bCount - aCount;
         })
-        .slice(0, WorkspaceLimit)
+        .slice(0, WORKSPACE_LIMIT)
         .map(node => ({
           id: node.id,
           crossDownstreamWSIds: node.crossDownstreamWSIds || [],
