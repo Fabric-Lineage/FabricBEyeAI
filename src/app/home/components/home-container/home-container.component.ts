@@ -994,13 +994,14 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       .linkWidth((link: any) => link.type === LinkType.CrossWorkspace ? 2 : 0.5)
       .d3Force('domainCluster', this.createDomainClusterForce())
       .linkOpacity(0.5)
-      // Add directional arrows with improved visibility
-      .linkDirectionalArrowLength(6)
-      .linkDirectionalArrowRelPos(1)
-      .linkDirectionalArrowColor((link: any) => {
-        if (link.type === LinkType.CrossWorkspace) return COLOR_ARROW_CROSS_WS;
-        return COLOR_ARROW_CONTAINS;
+      // Add directional arrows ONLY for meaningful data flow (not for Contains)
+      .linkDirectionalArrowLength((link: any) => {
+        // Only show arrows for CrossWorkspace links (data dependencies)
+        // Contains links (workspace → artifact) don't need arrows - they're hierarchical
+        return link.type === LinkType.CrossWorkspace ? 6 : 0;
       })
+      .linkDirectionalArrowRelPos(1)
+      .linkDirectionalArrowColor(COLOR_ARROW_CROSS_WS)
       // Rich HTML tooltips
       .nodeLabel((node: any) => {
         const typeLabel = NodeType[node.type];
