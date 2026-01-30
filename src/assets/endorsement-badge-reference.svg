@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200">
+  <defs>
+    <style>
+      .label { font-family: Arial, sans-serif; font-size: 14px; fill: white; }
+      .title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; fill: white; }
+    </style>
+  </defs>
+  
+  <!-- Dark background -->
+  <rect width="400" height="200" fill="#1a1a2e"/>
+  
+  <!-- Title -->
+  <text x="200" y="25" class="title" text-anchor="middle">PowerBEye Endorsement Badges</text>
+  
+  <!-- Certified Badge -->
+  <g transform="translate(80, 60)">
+    <!-- Badge circle -->
+    <circle cx="0" cy="0" r="20" fill="rgba(0,100,200,0.9)" stroke="#005A9E" stroke-width="2"/>
+    <!-- Checkmark -->
+    <text x="0" y="8" font-size="24" font-weight="900" fill="#FFD700" text-anchor="middle">✓</text>
+    <!-- Label -->
+    <text x="0" y="50" class="label" text-anchor="middle">Certified</text>
+    <text x="0" y="70" font-size="11" fill="#aaa" text-anchor="middle">Admin-approved</text>
+    <text x="0" y="85" font-size="11" fill="#FFD700" text-anchor="middle">Gold ✓ on Blue</text>
+  </g>
+  
+  <!-- Promoted Badge -->
+  <g transform="translate(200, 60)">
+    <!-- Badge circle -->
+    <circle cx="0" cy="0" r="20" fill="rgba(100,200,100,0.9)" stroke="#10B981" stroke-width="2"/>
+    <!-- Up arrow -->
+    <text x="0" y="8" font-size="20" font-weight="900" fill="#FFFFFF" text-anchor="middle">↑</text>
+    <!-- Label -->
+    <text x="0" y="50" class="label" text-anchor="middle">Promoted</text>
+    <text x="0" y="70" font-size="11" fill="#aaa" text-anchor="middle">Contributor-endorsed</text>
+    <text x="0" y="85" font-size="11" fill="#10B981" text-anchor="middle">White ↑ on Green</text>
+  </g>
+  
+  <!-- None Badge -->
+  <g transform="translate(320, 60)">
+    <!-- Empty circle -->
+    <circle cx="0" cy="0" r="20" fill="none" stroke="#444" stroke-width="2" stroke-dasharray="2,2"/>
+    <!-- X mark -->
+    <text x="0" y="8" font-size="20" fill="#666" text-anchor="middle">–</text>
+    <!-- Label -->
+    <text x="0" y="50" class="label" text-anchor="middle">None</text>
+    <text x="0" y="70" font-size="11" fill="#aaa" text-anchor="middle">Not endorsed</text>
+    <text x="0" y="85" font-size="11" fill="#666" text-anchor="middle">No badge shown</text>
+  </g>
+  
+  <!-- Example in graph -->
+  <text x="200" y="140" font-size="12" fill="#10B981" text-anchor="middle">In the 3D graph, badges appear at top-right of artifact nodes</text>
+  
+  <!-- Position indicator -->
+  <g transform="translate(200, 165)">
+    <!-- Artifact box representation -->
+    <rect x="-15" y="-15" width="30" height="30" fill="#555" stroke="#888" stroke-width="1"/>
+    <text x="0" y="5" font-size="10" fill="white" text-anchor="middle">Icon</text>
+    <!-- Badge position -->
+    <circle cx="12" cy="-12" r="8" fill="rgba(0,100,200,0.9)"/>
+    <text x="12" y="-8" font-size="10" font-weight="900" fill="#FFD700" text-anchor="middle">✓</text>
+  </g>
+  
+</svg>

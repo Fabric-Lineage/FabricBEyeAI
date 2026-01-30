@@ -1,7 +1,7 @@
 <section class="container" [ngClass]="{'details': !shouldShowGraph}">
     <div class="scanDetails"  *ngIf="!shouldShowGraph">
-      <p class="title">Use PowerB Eye to generate a 3D visualization of all the content and workspaces in your tenant and the connections between them.</p>
-      <p class="subTitle">Start by scanning the tenant. Then, select 'Show visualization' to open the file and display the 3D visual.</p>
+      <p class="title">Use PowerBEye to generate a 3D visualization of Microsoft Fabric workspaces and their connections.</p>
+      <p class="subTitle">Visualize lineage across Semantic Models, Lakehouses, Dataflows, and Reports in your Fabric tenant.</p>
       <div class="buttonContainer">
         <div class="scanButton" (click)="startScan()">
           <p>Scan tenant</p>
@@ -10,9 +10,123 @@
         <div class="visButton" (click)="onAddFile()">
           <p>Show visualization</p>
         </div>
+        <div class="visButton" style="margin-left: 20px;" (click)="loadDemoMode()">
+           <p>Demo Mode</p>
+        </div>
       </div>
     </div>
     <img class="imageGraph" src="assets/MaskGroup.png" *ngIf="!shouldShowGraph">
+    
+    <!-- Graph Controls Toolbar -->
+    <div class="graph-controls" *ngIf="shouldShowGraph">
+      <input 
+        type="text" 
+        class="search-input" 
+        placeholder="🔍 Search workspaces, artifacts..."
+        [(ngModel)]="searchTerm"
+        (input)="onSearchChange()"
+      />
+      
+      <button class="control-btn" (click)="toggleSimulation()" [title]="simulationPaused ? 'Resume simulation' : 'Pause simulation'">
+        <span>{{ simulationPaused ? '▶️' : '⏸️' }}</span> {{ simulationPaused ? 'Resume' : 'Pause' }}
+      </button>
+      
+      <button class="control-btn" (click)="toggleLinkCurvature()" title="Toggle curved links">
+        <span>〰️</span> {{ linkCurvature > 0 ? 'Straight' : 'Curved' }}
+      </button>
+      
+      <button class="control-btn" (click)="toggleFog()" title="Toggle depth fog">
+        <span>🌫️</span> {{ fogEnabled ? 'No Fog' : 'Fog' }}
+      </button>
+      
+      <button class="control-btn" (click)="zoomToFit()" title="Fit all domains to view">
+        <span>📐</span> Fit
+      </button>
+      
+      <button class="control-btn" (click)="isolateMode = !isolateMode; updateIsolationMode()" 
+              [class.active]="isolateMode" title="Click domains to isolate">
+        <span>🎯</span> {{ isolateMode ? 'Exit Focus' : 'Focus Mode' }}
+      </button>
+      
+      <button class="control-btn" (click)="toggleFilterPanel()" title="Show filters">
+        <span>🎛️</span> Filters
+      </button>
+      
+      <button class="control-btn" (click)="exportToPNG()" title="Export as PNG">
+        <span>📷</span>
+      </button>
+    </div>
+    
+    <!-- Focus Mode Instructions -->
+    <div class="focus-instructions" *ngIf="shouldShowGraph && isolateMode && !isolatedDomain">
+      <span>🎯</span> Click any <strong>workspace</strong> (green badge) to isolate its domain
+    </div>
+    
+    <div class="focus-active" *ngIf="shouldShowGraph && isolatedDomain">
+      <span>✓</span> Showing: <strong>{{ getIsolatedDomainName() }}</strong> | Click workspace again to exit
+    </div>
+    
+    <!-- Filter Panel -->
+    <div class="filter-panel" *ngIf="shouldShowGraph && showFilterPanel">
+      <div class="filter-section">
+        <h3>Domains</h3>
+        <div class="filter-options">
+          <label *ngFor="let domain of domains" class="filter-option">
+            <input type="checkbox" 
+                   [checked]="!hiddenDomains.has(domain.id)"
+                   (change)="toggleDomain(domain.id)"/>
+            <span [style.color]="getDomainColorHex(domain.id)">{{ domain.name }}</span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="filter-section">
+        <h3>Artifact Types</h3>
+        <div class="filter-options">
+          <label class="filter-option">
+            <input type="checkbox" [(ngModel)]="showWorkspaces" (change)="applyFilters()"/>
+            <span>🏢 Workspaces</span>
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" [(ngModel)]="showLakehouses" (change)="applyFilters()"/>
+            <span>🏠 Lakehouses</span>
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" [(ngModel)]="showWarehouses" (change)="applyFilters()"/>
+            <span>🏛️ Warehouses</span>
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" [(ngModel)]="showReports" (change)="applyFilters()"/>
+            <span>📊 Reports</span>
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" [(ngModel)]="showDatasets" (change)="applyFilters()"/>
+            <span>📦 Datasets</span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="filter-section">
+        <h3>Links</h3>
+        <div class="filter-options">
+          <label class="filter-option">
+            <input type="checkbox" [(ngModel)]="showCrossWorkspaceLinks" (change)="applyFilters()"/>
+            <span>↔️ Cross-Workspace</span>
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" [(ngModel)]="showContainsLinks" (change)="applyFilters()"/>
+            <span>⊂ Contains</span>
+          </label>
+          <div class="slider-control">
+            <label>Link Opacity: {{linkOpacity}}%</label>
+            <input type="range" min="10" max="100" [(ngModel)]="linkOpacity" (input)="updateLinkOpacity()"/>
+          </div>
+        </div>
+      </div>
+      
+      <button class="reset-btn" (click)="resetFilters()">Reset All Filters</button>
+    </div>
+    
     <div id="3d-graph"></div>
 </section>
 <input hidden type="file" #filesInput (change)="onFileAdded()" multiple>

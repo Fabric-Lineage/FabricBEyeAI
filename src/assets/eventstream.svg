@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Eventstream icon - orange flowing data -->
+  <path d="M8 32 Q20 20, 32 32 T56 32" stroke="#F97316" stroke-width="4" fill="none"/>
+  <circle cx="8" cy="32" r="4" fill="#F97316"/>
+  <circle cx="32" cy="32" r="4" fill="#F97316"/>
+  <circle cx="56" cy="32" r="4" fill="#F97316"/>
+  <!-- Flow particles -->
+  <circle cx="16" cy="26" r="2" fill="#F97316" opacity="0.6"/>
+  <circle cx="24" cy="34" r="2" fill="#F97316" opacity="0.6"/>
+  <circle cx="40" cy="28" r="2" fill="#F97316" opacity="0.6"/>
+  <circle cx="48" cy="36" r="2" fill="#F97316" opacity="0.6"/>
+</svg>

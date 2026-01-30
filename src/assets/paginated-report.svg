@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Paginated Report icon - orange document with pages -->
+  <rect x="16" y="12" width="32" height="40" rx="2" fill="#FFA500" opacity="0.9"/>
+  <rect x="20" y="16" width="24" height="32" fill="#FFF" opacity="0.95"/>
+  <!-- Page lines -->
+  <line x1="24" y1="22" x2="40" y2="22" stroke="#FFA500" stroke-width="1.5"/>
+  <line x1="24" y1="27" x2="40" y2="27" stroke="#FFA500" stroke-width="1.5"/>
+  <line x1="24" y1="32" x2="36" y2="32" stroke="#FFA500" stroke-width="1.5"/>
+  <line x1="24" y1="37" x2="40" y2="37" stroke="#FFA500" stroke-width="1.5"/>
+  <line x1="24" y1="42" x2="32" y2="42" stroke="#FFA500" stroke-width="1.5"/>
+  <!-- Page number -->
+  <text x="38" y="50" font-size="8" fill="#FFA500">1/N</text>
+</svg>

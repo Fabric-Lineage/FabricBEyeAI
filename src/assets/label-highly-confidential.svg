@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Highly Confidential - Red Lock -->
+  <rect x="20" y="30" width="24" height="20" rx="2" fill="#C43E1C"/>
+  <path d="M24 30 V24 Q24 18 32 18 Q40 18 40 24 V30" fill="none" stroke="#C43E1C" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="32" cy="40" r="3" fill="white"/>
+  <rect x="31" y="40" width="2" height="6" fill="white"/>
+</svg>
