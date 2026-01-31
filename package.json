@@ -7,7 +7,7 @@
     "build": "ng build",
     "test": "ng test",
     "e2e": "ng e2e",
-    "docs": "ng build --configuration production --output-path=docs --base-href=https://Fabric-Lineage.github.io/FabricBEyeAI/ --deploy-url=https://Fabric-Lineage.github.io/FabricBEyeAI/",
+    "docs": "ng build --configuration production --output-path=docs --base-href=/FabricBEyeAI/",
     "lint": "eslint src --ext .ts --fix"
   },
   "private": true,
