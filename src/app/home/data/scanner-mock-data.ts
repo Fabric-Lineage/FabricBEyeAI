@@ -46,7 +46,7 @@ const SENSITIVITY_LABELS = {
   HIGHLY_CONFIDENTIAL: '00000000-0000-0000-0000-000000000004'
 };
 
-// Helper to generate workspace IDs
+// Helper functions to generate unique IDs
 let workspaceCounter = 1;
 const generateWorkspaceId = () => `ws-${String(workspaceCounter++).padStart(4, '0')}`;
 
@@ -62,9 +62,93 @@ const MOCK_USERS = {
 };
 
 /**
- * Generate comprehensive mock workspace data
- * This creates realistic Fabric workspaces with all artifact types
+ * Microsoft Fabric Scanner API Mock Data
+ * 
+ * Pre-generates all artifact IDs to ensure consistent relationships across mock data.
+ * This prevents ID collisions and ensures all artifacts have stable, predictable IDs
+ * for cross-workspace references and SQL endpoints.
  */
+const ArtifactIds = {
+  // Workspace 1 - Sales Raw Data Lake
+  dataflow_salesforce_crm: generateArtifactId(),
+  dataflow_sap_erp: generateArtifactId(),
+  lakehouse_sales_bronze: generateArtifactId(),
+  
+  // Workspace 2 - Sales Data Transformation
+  dataflow_sales_cleansing: generateArtifactId(),
+  lakehouse_sales_silver: generateArtifactId(),
+  
+  // Workspace 3 - Sales Analytics & Reporting
+  report_sales_performance: generateArtifactId(),
+  report_territory_analysis: generateArtifactId(),
+  report_sales_forecast: generateArtifactId(),
+  dashboard_executive_sales: generateArtifactId(),
+  dataset_sales_analytics: generateArtifactId(),
+  
+  // Workspace 4 - Finance General Ledger
+  report_finance_monthly_statements: generateArtifactId(),
+  report_finance_balance_sheet: generateArtifactId(),
+  dataset_finance_general_ledger: generateArtifactId(),
+  dataflow_finance_sap: generateArtifactId(),
+  datamart_finance_warehouse: generateArtifactId(),
+  
+  // Workspace 5 - Finance FP&A
+  report_finance_budget_vs_actuals: generateArtifactId(),
+  report_finance_aop: generateArtifactId(),
+  dataset_finance_fpa_planning: generateArtifactId(),
+  
+  // Workspace 6 - HR Workforce Analytics
+  report_hr_headcount: generateArtifactId(),
+  report_hr_attrition: generateArtifactId(),
+  dashboard_hr_executive: generateArtifactId(),
+  dataset_hr_analytics: generateArtifactId(),
+  dataflow_hr_workday: generateArtifactId(),
+  
+  // Workspace 7 - Marketing Campaign Analytics
+  report_marketing_campaign_roi: generateArtifactId(),
+  report_marketing_customer_journey: generateArtifactId(),
+  dataset_marketing_analytics: generateArtifactId(),
+  dataflow_marketing_google_analytics: generateArtifactId(),
+  
+  // Workspace 8 - Marketing Digital & Social
+  report_marketing_social_media: generateArtifactId(),
+  dataset_marketing_social_media: generateArtifactId(),
+  
+  // Workspace 9 - Supply Chain Logistics (using named IDs)
+  
+  // Workspace 10 - Manufacturing IoT
+  report_manufacturing_equipment: generateArtifactId(),
+  dataset_manufacturing_operations: generateArtifactId(),
+  datamart_manufacturing_iot_eventhouse: generateArtifactId(),
+  
+  // Workspace 11 - Data Science ML Models
+  report_datascience_model_performance: generateArtifactId(),
+  dataset_datascience_ml_experiments: generateArtifactId(),
+  
+  // Workspace 12 - Executive C-Suite
+  report_executive_ceo: generateArtifactId(),
+  report_executive_cfo: generateArtifactId(),
+  dashboard_executive_scorecard: generateArtifactId(),
+  dataset_executive_performance: generateArtifactId(),
+  
+  // Workspace 13 - Compliance Risk Management
+  report_compliance_audit_trail: generateArtifactId(),
+  dataset_compliance_model: generateArtifactId(),
+  
+  // Workspace 14 - IT Infrastructure
+  report_it_system_health: generateArtifactId(),
+  dataset_it_operations: generateArtifactId(),
+  
+  // Workspace 15 - Customer Support
+  report_support_ticket_analysis: generateArtifactId(),
+  dataset_support_analytics: generateArtifactId(),
+  
+  // Additional Enterprise Lakehouses (late in workspace list)
+  lakehouse_enterprise_bronze: generateArtifactId(),
+  lakehouse_enterprise_gold: generateArtifactId(),
+  warehouse_enterprise_data: generateArtifactId(),
+};
+
 export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
   workspaces: [
     // ====== UNASSIGNED WORKSPACES (No Domain) ======
@@ -163,7 +247,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       datasets: [],
       dataflows: [
         {
-          objectId: generateArtifactId(),
+          objectId: ArtifactIds.dataflow_salesforce_crm,
           name: 'Salesforce CRM Ingestion',
           description: 'Daily Salesforce data extract',
           configuredBy: MOCK_USERS.admin.emailAddress,
@@ -174,7 +258,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           tags: ['crm', 'salesforce', 'ingestion']
         },
         {
-          objectId: generateArtifactId(),
+          objectId: ArtifactIds.dataflow_sap_erp,
           name: 'SAP ERP Orders',
           description: 'Order data from SAP ERP',
           configuredBy: MOCK_USERS.admin.emailAddress,
@@ -187,7 +271,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       ],
       datamarts: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.lakehouse_sales_bronze,
           name: 'Sales Bronze Lakehouse',
           description: 'Bronze layer - raw sales data',
           type: 'Lakehouse',
@@ -196,8 +280,8 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           endorsementDetails: { endorsement: 'Promoted' },
           sensitivityLabel: { labelId: SENSITIVITY_LABELS.CONFIDENTIAL },
           upstreamDataflows: [
-            { targetDataflowId: 'art-000001', groupId: 'ws-0001' },
-            { targetDataflowId: 'art-000002', groupId: 'ws-0001' }
+            { targetDataflowId: ArtifactIds.dataflow_salesforce_crm, groupId: 'ws-0006' },
+            { targetDataflowId: ArtifactIds.dataflow_sap_erp, groupId: 'ws-0006' }
           ],
           users: [],
           tags: ['bronze', 'raw', 'lakehouse']
@@ -222,21 +306,21 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       datasets: [],
       dataflows: [
         {
-          objectId: generateArtifactId(),
+          objectId: ArtifactIds.dataflow_sales_cleansing,
           name: 'Sales Data Cleansing',
           description: 'Clean and standardize sales data',
           configuredBy: MOCK_USERS.analyst.emailAddress,
           modifiedDateTime: '2026-01-29T10:00:00Z',
           endorsementDetails: { endorsement: 'Promoted' },
           sensitivityLabel: { labelId: SENSITIVITY_LABELS.INTERNAL },
-          upstreamDatamarts: [{ targetDatamartId: 'art-000003', groupId: 'ws-0001' }],
+          upstreamDatamarts: [{ targetDatamartId: ArtifactIds.lakehouse_sales_bronze, groupId: 'ws-0006' }],
           users: [],
           tags: ['silver', 'cleansing']
         }
       ],
       datamarts: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.lakehouse_sales_silver,
           name: 'Sales Silver Lakehouse',
           description: 'Silver layer - cleaned sales data',
           type: 'Lakehouse',
@@ -244,7 +328,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           modifiedDateTime: '2026-01-29T15:00:00Z',
           endorsementDetails: { endorsement: 'Promoted' },
           sensitivityLabel: { labelId: SENSITIVITY_LABELS.INTERNAL },
-          upstreamDataflows: [{ targetDataflowId: 'art-000004', groupId: 'ws-0002' }],
+          upstreamDataflows: [{ targetDataflowId: ArtifactIds.dataflow_sales_cleansing, groupId: 'ws-0007' }],
           users: [],
           tags: ['silver', 'cleaned', 'lakehouse']
         }
@@ -265,9 +349,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       description: 'Sales dashboards and analytical reports',
       reports: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_sales_performance,
           name: 'Sales Performance Dashboard',
-          datasetId: 'art-000007',
+          datasetId: ArtifactIds.dataset_sales_analytics,
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-15T09:00:00Z',
           modifiedDateTime: '2026-01-29T11:00:00Z',
@@ -279,9 +363,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           tags: ['sales', 'kpi', 'dashboard']
         },
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_territory_analysis,
           name: 'Territory Analysis',
-          datasetId: 'art-000007',
+          datasetId: ArtifactIds.dataset_sales_analytics,
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-20T14:00:00Z',
           modifiedDateTime: '2026-01-28T16:00:00Z',
@@ -293,9 +377,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           tags: ['sales', 'territory', 'geo']
         },
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_sales_forecast,
           name: 'Sales Forecast Model',
-          datasetId: 'art-000007',
+          datasetId: ArtifactIds.dataset_sales_analytics,
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-10T10:00:00Z',
           modifiedDateTime: '2026-01-27T13:00:00Z',
@@ -309,13 +393,13 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       ],
       dashboards: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.dashboard_executive_sales,
           displayName: 'Executive Sales Dashboard',
           isReadOnly: false,
           tiles: [
-            { id: 'tile-001', title: 'YTD Revenue', reportId: 'art-000006', datasetId: 'art-000007' },
-            { id: 'tile-002', title: 'Top Products', reportId: 'art-000006', datasetId: 'art-000007' },
-            { id: 'tile-003', title: 'Regional Performance', reportId: 'art-000007', datasetId: 'art-000007' }
+            { id: 'tile-001', title: 'YTD Revenue', reportId: ArtifactIds.report_sales_performance, datasetId: ArtifactIds.dataset_sales_analytics },
+            { id: 'tile-002', title: 'Top Products', reportId: ArtifactIds.report_sales_performance, datasetId: ArtifactIds.dataset_sales_analytics },
+            { id: 'tile-003', title: 'Regional Performance', reportId: ArtifactIds.report_territory_analysis, datasetId: ArtifactIds.dataset_sales_analytics }
           ],
           endorsementDetails: { endorsement: 'Certified', certifiedBy: MOCK_USERS.admin.emailAddress },
           sensitivityLabel: { labelId: SENSITIVITY_LABELS.INTERNAL },
@@ -325,7 +409,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       ],
       datasets: [
         {
-          id: 'art-000007',
+          id: ArtifactIds.dataset_sales_analytics,
           name: 'Sales Analytics Model',
           description: 'Comprehensive sales semantic model',
           configuredBy: MOCK_USERS.analyst.emailAddress,
@@ -333,7 +417,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           targetStorageMode: 'Import',
           endorsementDetails: { endorsement: 'Certified', certifiedBy: MOCK_USERS.admin.emailAddress },
           sensitivityLabel: { labelId: SENSITIVITY_LABELS.INTERNAL },
-          upstreamDatamarts: [{ targetDatamartId: 'art-000005', groupId: 'ws-0002' }],
+          upstreamDatamarts: [{ targetDatamartId: ArtifactIds.lakehouse_sales_silver, groupId: 'ws-0007' }],
           tables: [
             { name: 'FactSales', columns: [{ name: 'OrderID', dataType: 'Int64' }, { name: 'Revenue', dataType: 'Decimal' }] },
             { name: 'DimCustomer', columns: [{ name: 'CustomerID', dataType: 'Int64' }, { name: 'CustomerName', dataType: 'String' }] },
@@ -363,9 +447,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       description: 'Financial accounting and GL reporting',
       reports: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_finance_monthly_statements,
           name: 'Monthly Financial Statements',
-          datasetId: 'art-000013',
+          datasetId: ArtifactIds.dataset_finance_general_ledger,
           reportType: 'PaginatedReport',
           createdDateTime: '2026-01-10T08:00:00Z',
           modifiedDateTime: '2026-01-28T17:00:00Z',
@@ -377,9 +461,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           tags: ['finance', 'regulatory', 'statements']
         },
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_finance_balance_sheet,
           name: 'Balance Sheet Analysis',
-          datasetId: 'art-000013',
+          datasetId: ArtifactIds.dataset_finance_general_ledger,
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-12T09:00:00Z',
           modifiedDateTime: '2026-01-29T08:30:00Z',
@@ -394,7 +478,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       dashboards: [],
       datasets: [
         {
-          id: 'art-000013',
+          id: ArtifactIds.dataset_finance_general_ledger,
           name: 'General Ledger Model',
           description: 'Core financial accounting model',
           configuredBy: MOCK_USERS.admin.emailAddress,
@@ -412,7 +496,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       ],
       dataflows: [
         {
-          objectId: generateArtifactId(),
+          objectId: ArtifactIds.dataflow_finance_sap,
           name: 'SAP Financial Data',
           description: 'Financial transactions from SAP',
           configuredBy: MOCK_USERS.admin.emailAddress,
@@ -425,7 +509,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       ],
       datamarts: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.datamart_finance_warehouse,
           name: 'Finance Data Warehouse',
           description: 'Enterprise financial data warehouse',
           type: 'Datawarehouse',
@@ -433,7 +517,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           modifiedDateTime: '2026-01-29T07:00:00Z',
           endorsementDetails: { endorsement: 'Certified', certifiedBy: MOCK_USERS.admin.emailAddress },
           sensitivityLabel: { labelId: SENSITIVITY_LABELS.HIGHLY_CONFIDENTIAL },
-          upstreamDataflows: [{ targetDataflowId: 'art-000014', groupId: 'ws-0004' }],
+          upstreamDataflows: [{ targetDataflowId: ArtifactIds.dataflow_finance_sap, groupId: 'ws-0004' }],
           users: [],
           tags: ['warehouse', 'finance', 'dwh']
         }
@@ -454,9 +538,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       description: 'Financial planning and analysis',
       reports: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_finance_budget_vs_actuals,
           name: 'Budget vs Actuals',
-          datasetId: 'art-000017',
+          datasetId: ArtifactIds.dataset_finance_fpa_planning,
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-08T10:00:00Z',
           modifiedDateTime: '2026-01-29T09:00:00Z',
@@ -468,9 +552,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           tags: ['budget', 'variance', 'fpa']
         },
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_finance_aop,
           name: 'Annual Operating Plan',
-          datasetId: 'art-000017',
+          datasetId: ArtifactIds.dataset_finance_fpa_planning,
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-05T11:00:00Z',
           modifiedDateTime: '2026-01-25T15:00:00Z',
@@ -485,7 +569,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       dashboards: [],
       datasets: [
         {
-          id: 'art-000017',
+          id: ArtifactIds.dataset_finance_fpa_planning,
           name: 'FP&A Planning Model',
           description: 'Financial planning semantic model',
           configuredBy: MOCK_USERS.analyst.emailAddress,
@@ -493,7 +577,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           targetStorageMode: 'DirectQuery',
           endorsementDetails: { endorsement: 'Promoted' },
           sensitivityLabel: { labelId: SENSITIVITY_LABELS.CONFIDENTIAL },
-          upstreamDatamarts: [{ targetDatamartId: 'art-000015', groupId: 'ws-0004' }],
+          upstreamDatamarts: [{ targetDatamartId: ArtifactIds.datamart_finance_warehouse, groupId: 'ws-0004' }],
           tables: [
             { name: 'FactBudget', columns: [{ name: 'BudgetID', dataType: 'Int64' }, { name: 'Amount', dataType: 'Decimal' }] }
           ],
@@ -520,9 +604,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       description: 'Human resources analytics and reporting',
       reports: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_hr_headcount,
           name: 'Headcount Dashboard',
-          datasetId: 'art-000020',
+          datasetId: ArtifactIds.dataset_hr_analytics,
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-12T08:00:00Z',
           modifiedDateTime: '2026-01-28T14:00:00Z',
@@ -534,9 +618,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           tags: ['hr', 'headcount', 'workforce']
         },
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_hr_attrition,
           name: 'Attrition Analysis',
-          datasetId: 'art-000020',
+          datasetId: ArtifactIds.dataset_hr_analytics,
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-15T09:00:00Z',
           modifiedDateTime: '2026-01-29T10:00:00Z',
@@ -550,12 +634,12 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       ],
       dashboards: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.dashboard_hr_executive,
           displayName: 'HR Executive Dashboard',
           isReadOnly: false,
           tiles: [
-            { id: 'tile-hr-001', title: 'Total Headcount', reportId: 'art-000019', datasetId: 'art-000020' },
-            { id: 'tile-hr-002', title: 'Attrition Rate', reportId: 'art-000020', datasetId: 'art-000020' }
+            { id: 'tile-hr-001', title: 'Total Headcount', reportId: ArtifactIds.report_hr_headcount, datasetId: ArtifactIds.dataset_hr_analytics },
+            { id: 'tile-hr-002', title: 'Attrition Rate', reportId: ArtifactIds.report_hr_attrition, datasetId: ArtifactIds.dataset_hr_analytics }
           ],
           endorsementDetails: { endorsement: 'Promoted' },
           sensitivityLabel: { labelId: SENSITIVITY_LABELS.CONFIDENTIAL },
@@ -565,7 +649,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       ],
       datasets: [
         {
-          id: 'art-000020',
+          id: ArtifactIds.dataset_hr_analytics,
           name: 'HR Analytics Model',
           description: 'Workforce analytics semantic model',
           configuredBy: MOCK_USERS.analyst.emailAddress,
@@ -583,7 +667,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       ],
       dataflows: [
         {
-          objectId: generateArtifactId(),
+          objectId: ArtifactIds.dataflow_hr_workday,
           name: 'Workday HR Data',
           description: 'Employee data from Workday',
           configuredBy: MOCK_USERS.admin.emailAddress,
@@ -612,9 +696,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       description: 'Marketing campaign performance',
       reports: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_marketing_campaign_roi,
           name: 'Campaign ROI Dashboard',
-          datasetId: 'art-000025',
+          datasetId: ArtifactIds.dataset_marketing_analytics,
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-18T10:00:00Z',
           modifiedDateTime: '2026-01-29T11:00:00Z',
@@ -626,9 +710,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           tags: ['marketing', 'roi', 'campaigns']
         },
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_marketing_customer_journey,
           name: 'Customer Journey Analysis',
-          datasetId: 'art-000025',
+          datasetId: ArtifactIds.dataset_marketing_analytics,
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-20T09:00:00Z',
           modifiedDateTime: '2026-01-28T16:00:00Z',
@@ -643,7 +727,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       dashboards: [],
       datasets: [
         {
-          id: 'art-000025',
+          id: ArtifactIds.dataset_marketing_analytics,
           name: 'Marketing Analytics Model',
           description: 'Marketing campaign semantic model',
           configuredBy: MOCK_USERS.analyst.emailAddress,
@@ -660,7 +744,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       ],
       dataflows: [
         {
-          objectId: generateArtifactId(),
+          objectId: ArtifactIds.dataflow_marketing_google_analytics,
           name: 'Google Analytics Data',
           description: 'Web analytics from Google',
           configuredBy: MOCK_USERS.analyst.emailAddress,
@@ -688,9 +772,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       description: 'Digital marketing and social media analytics',
       reports: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_marketing_social_media,
           name: 'Social Media Performance',
-          datasetId: 'art-000029',
+          datasetId: ArtifactIds.dataset_marketing_social_media,
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-22T10:00:00Z',
           modifiedDateTime: '2026-01-29T12:00:00Z',
@@ -705,7 +789,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       dashboards: [],
       datasets: [
         {
-          id: 'art-000029',
+          id: ArtifactIds.dataset_marketing_social_media,
           name: 'Social Media Model',
           description: 'Social media analytics',
           configuredBy: MOCK_USERS.analyst.emailAddress,
@@ -741,7 +825,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
         {
           id: generateArtifactId(),
           name: 'Inventory Management',
-          datasetId: 'art-000032',
+          datasetId: 'art-supply-dataset', // References dataset below
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-16T09:00:00Z',
           modifiedDateTime: '2026-01-28T15:00:00Z',
@@ -755,7 +839,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
         {
           id: generateArtifactId(),
           name: 'Supplier Performance',
-          datasetId: 'art-000032',
+          datasetId: 'art-supply-dataset', // References dataset below
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-19T10:00:00Z',
           modifiedDateTime: '2026-01-27T14:00:00Z',
@@ -770,7 +854,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       dashboards: [],
       datasets: [
         {
-          id: 'art-000032',
+          id: 'art-supply-dataset',
           name: 'Supply Chain Model',
           description: 'Supply chain analytics',
           configuredBy: MOCK_USERS.analyst.emailAddress,
@@ -804,9 +888,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       description: 'Real-time manufacturing and IoT data',
       reports: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_manufacturing_equipment,
           name: 'Equipment Monitoring',
-          datasetId: 'art-000036',
+          datasetId: ArtifactIds.dataset_manufacturing_operations,
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-10T08:00:00Z',
           modifiedDateTime: '2026-01-29T09:00:00Z',
@@ -821,7 +905,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       dashboards: [],
       datasets: [
         {
-          id: 'art-000036',
+          id: ArtifactIds.dataset_manufacturing_operations,
           name: 'Manufacturing Operations Model',
           description: 'Manufacturing analytics',
           configuredBy: MOCK_USERS.analyst.emailAddress,
@@ -839,7 +923,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       dataflows: [],
       datamarts: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.datamart_manufacturing_iot_eventhouse,
           name: 'IoT Eventhouse',
           description: 'Real-time IoT sensor data',
           type: 'Lakehouse',
@@ -868,9 +952,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       description: 'Machine learning and AI models',
       reports: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_datascience_model_performance,
           name: 'Model Performance Dashboard',
-          datasetId: 'art-000040',
+          datasetId: ArtifactIds.dataset_datascience_ml_experiments,
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-25T10:00:00Z',
           modifiedDateTime: '2026-01-29T13:00:00Z',
@@ -885,7 +969,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       dashboards: [],
       datasets: [
         {
-          id: 'art-000040',
+          id: ArtifactIds.dataset_datascience_ml_experiments,
           name: 'ML Experiment Tracking',
           description: 'ML experiment metrics',
           configuredBy: MOCK_USERS.analyst.emailAddress,
@@ -919,9 +1003,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       description: 'Executive leadership dashboards',
       reports: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_executive_ceo,
           name: 'CEO Dashboard',
-          datasetId: 'art-000043',
+          datasetId: ArtifactIds.dataset_executive_performance,
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-05T08:00:00Z',
           modifiedDateTime: '2026-01-29T07:00:00Z',
@@ -933,9 +1017,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           tags: ['executive', 'ceo', 'kpi']
         },
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_executive_cfo,
           name: 'CFO Financial Summary',
-          datasetId: 'art-000043',
+          datasetId: ArtifactIds.dataset_executive_performance,
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-06T08:00:00Z',
           modifiedDateTime: '2026-01-28T08:00:00Z',
@@ -949,12 +1033,12 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       ],
       dashboards: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.dashboard_executive_scorecard,
           displayName: 'Executive Scorecard',
           isReadOnly: true,
           tiles: [
-            { id: 'tile-exec-001', title: 'Revenue', reportId: 'art-000041', datasetId: 'art-000043' },
-            { id: 'tile-exec-002', title: 'Operating Margin', reportId: 'art-000042', datasetId: 'art-000043' }
+            { id: 'tile-exec-001', title: 'Revenue', reportId: ArtifactIds.report_executive_ceo, datasetId: ArtifactIds.dataset_executive_performance },
+            { id: 'tile-exec-002', title: 'Operating Margin', reportId: ArtifactIds.report_executive_cfo, datasetId: ArtifactIds.dataset_executive_performance }
           ],
           endorsementDetails: { endorsement: 'Certified', certifiedBy: MOCK_USERS.admin.emailAddress },
           sensitivityLabel: { labelId: SENSITIVITY_LABELS.HIGHLY_CONFIDENTIAL },
@@ -964,7 +1048,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       ],
       datasets: [
         {
-          id: 'art-000043',
+          id: ArtifactIds.dataset_executive_performance,
           name: 'Enterprise Performance Model',
           description: 'Company-wide KPIs',
           configuredBy: MOCK_USERS.admin.emailAddress,
@@ -973,9 +1057,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           endorsementDetails: { endorsement: 'Certified', certifiedBy: MOCK_USERS.admin.emailAddress },
           sensitivityLabel: { labelId: SENSITIVITY_LABELS.HIGHLY_CONFIDENTIAL },
           upstreamDatasets: [
-            { targetDatasetId: 'art-000007', groupId: 'ws-0003' },
-            { targetDatasetId: 'art-000013', groupId: 'ws-0004' },
-            { targetDatasetId: 'art-000032', groupId: 'ws-0009' }
+            { targetDatasetId: ArtifactIds.dataset_sales_analytics, groupId: 'ws-0003' },
+            { targetDatasetId: ArtifactIds.dataset_finance_general_ledger, groupId: 'ws-0004' },
+            { targetDatasetId: 'art-supply-dataset', groupId: 'ws-0014' }
           ],
           tables: [
             { name: 'FactKPI', columns: [{ name: 'KPIID', dataType: 'String' }] }
@@ -1003,9 +1087,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       description: 'Regulatory compliance and risk reporting',
       reports: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_compliance_audit_trail,
           name: 'Audit Trail Report',
-          datasetId: 'art-000047',
+          datasetId: ArtifactIds.dataset_compliance_model,
           reportType: 'PaginatedReport',
           createdDateTime: '2026-01-10T08:00:00Z',
           modifiedDateTime: '2026-01-25T10:00:00Z',
@@ -1020,7 +1104,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       dashboards: [],
       datasets: [
         {
-          id: 'art-000047',
+          id: ArtifactIds.dataset_compliance_model,
           name: 'Compliance Model',
           description: 'Regulatory compliance tracking',
           configuredBy: MOCK_USERS.admin.emailAddress,
@@ -1054,9 +1138,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       description: 'IT infrastructure and system monitoring',
       reports: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_it_system_health,
           name: 'System Health Dashboard',
-          datasetId: 'art-000050',
+          datasetId: ArtifactIds.dataset_it_operations,
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-20T08:00:00Z',
           modifiedDateTime: '2026-01-29T14:00:00Z',
@@ -1071,7 +1155,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       dashboards: [],
       datasets: [
         {
-          id: 'art-000050',
+          id: ArtifactIds.dataset_it_operations,
           name: 'IT Operations Model',
           description: 'IT infrastructure metrics',
           configuredBy: MOCK_USERS.analyst.emailAddress,
@@ -1104,9 +1188,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       description: 'Customer support and service metrics',
       reports: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.report_support_ticket_analysis,
           name: 'Support Ticket Analysis',
-          datasetId: 'art-000053',
+          datasetId: ArtifactIds.dataset_support_analytics,
           reportType: 'PowerBIReport',
           createdDateTime: '2026-01-22T10:00:00Z',
           modifiedDateTime: '2026-01-28T12:00:00Z',
@@ -1121,7 +1205,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       dashboards: [],
       datasets: [
         {
-          id: 'art-000053',
+          id: ArtifactIds.dataset_support_analytics,
           name: 'Support Analytics Model',
           description: 'Customer support metrics',
           configuredBy: MOCK_USERS.contributor.emailAddress,
@@ -1207,7 +1291,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
             { name: 'FactSales', columns: [{ name: 'SaleID', dataType: 'Int64' }] },
             { name: 'DimTerritory', columns: [{ name: 'TerritoryID', dataType: 'String' }] }
           ],
-          upstreamDatasets: [{ targetDatasetId: 'art-000001', groupId: 'ws-sales-na' }],
+          upstreamDatasets: [{ targetDatasetId: ArtifactIds.dataflow_salesforce_crm, groupId: 'ws-sales-na' }],
           users: [],
           tags: ['sales', 'crm']
         }
@@ -1272,7 +1356,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
             { name: 'FactCustomerBehavior', columns: [{ name: 'CustomerID', dataType: 'String' }] },
             { name: 'DimSegment', columns: [{ name: 'SegmentID', dataType: 'Int64' }] }
           ],
-          upstreamDatamarts: [{ targetDatamartId: 'art-000003', groupId: 'ws-sales-na' }],
+          upstreamDatamarts: [{ targetDatamartId: ArtifactIds.lakehouse_sales_bronze, groupId: 'ws-sales-na' }],
           users: [],
           tags: ['customer', 'ml']
         }
@@ -1396,7 +1480,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
             { name: 'FactSalesEMEA', columns: [{ name: 'SaleID', dataType: 'Int64' }] },
             { name: 'DimCurrency', columns: [{ name: 'CurrencyCode', dataType: 'String' }] }
           ],
-          upstreamDatasets: [{ targetDatasetId: 'art-000001', groupId: 'ws-sales-na' }],
+          upstreamDatasets: [{ targetDatasetId: ArtifactIds.dataflow_salesforce_crm, groupId: 'ws-sales-na' }],
           users: [],
           tags: ['emea', 'sales']
         }
@@ -2552,7 +2636,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
             { name: 'FactExecutiveKPIs', columns: [{ name: 'KPIID', dataType: 'String' }] }
           ],
           upstreamDatasets: [
-            { targetDatasetId: 'art-000001', groupId: 'ws-sales-na' },
+            { targetDatasetId: ArtifactIds.dataflow_salesforce_crm, groupId: 'ws-sales-na' },
             { targetDatasetId: 'art-finance-001', groupId: 'ws-finance' },
             { targetDatasetId: 'art-hr-workforce', groupId: 'ws-hr' }
           ],
@@ -2634,7 +2718,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       dataflows: [],
       datamarts: [
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.lakehouse_enterprise_bronze,
           name: 'Enterprise Bronze Lakehouse',
           description: 'Bronze layer - raw data landing zone',
           type: 'Lakehouse',
@@ -2646,7 +2730,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           tags: ['bronze', 'raw', 'lakehouse', 'delta']
         },
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.lakehouse_enterprise_gold,
           name: 'Enterprise Gold Lakehouse',
           description: 'Gold layer - curated analytics-ready data',
           type: 'Lakehouse',
@@ -2658,7 +2742,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           tags: ['gold', 'curated', 'lakehouse', 'delta']
         },
         {
-          id: generateArtifactId(),
+          id: ArtifactIds.warehouse_enterprise_data,
           name: 'Enterprise Data Warehouse',
           description: 'SQL-based enterprise data warehouse',
           type: 'Datawarehouse',

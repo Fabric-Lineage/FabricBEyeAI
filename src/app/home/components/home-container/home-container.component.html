@@ -50,8 +50,18 @@
       
       <button class="control-btn" (click)="toggleUnassignedOnly()" 
               [class.active]="showUnassignedOnly" 
-              title="Show only unassigned workspaces for domain assignment">
-        <span>🏷️</span> {{ showUnassignedOnly ? 'Show All' : 'Unassigned' }}
+              title="Manage unassigned workspaces">
+        <span>🏷️</span> Manage Unassigned
+        <span class="badge" *ngIf="unassignedCount > 0" [class.warning]="unassignedCount > 0">
+          {{ unassignedCount }}
+        </span>
+      </button>
+      
+      <button class="control-btn" (click)="toggleShowUnassignedWorkspaces()" 
+              [class.active]="showUnassignedWorkspaces" 
+              title="Show/hide unassigned workspaces in graph">
+        <span>{{ showUnassignedWorkspaces ? '👁️' : '👁️‍🗨️' }}</span> 
+        {{ showUnassignedWorkspaces ? 'Hide' : 'Show' }} Unassigned
       </button>
       
       <button class="control-btn" (click)="toggleFilterPanel()" title="Show filters">
@@ -73,8 +83,115 @@
     </div>
     
     <!-- Unassigned Mode Instructions -->
-    <div class="focus-instructions" style="background: #FF9800;" *ngIf="shouldShowGraph && showUnassignedOnly">
-      <span>🏷️</span> Showing <strong>unassigned workspaces</strong> (orange) - Drag them into domains to assign
+    <div class="focus-instructions" style="background: #FF9800;" *ngIf="shouldShowGraph && showUnassignedOnly && !showAssignmentPanel">
+      <span>🏷️</span> Showing <strong>{{ unassignedCount }} unassigned workspace{{ unassignedCount !== 1 ? 's' : '' }}</strong> (orange) - Click "Unassigned" button to manage
+    </div>
+    
+    <!-- Domain Assignment Panel -->
+    <div class="assignment-panel" *ngIf="shouldShowGraph && showAssignmentPanel">
+      <div class="panel-header">
+        <h2>🏷️ Assign Workspaces to Domains</h2>
+        <button class="close-btn" (click)="closeAssignmentPanel()" title="Close panel">✕</button>
+      </div>
+      
+      <div class="panel-stats">
+        <div class="stat">
+          <span class="stat-number">{{ unassignedCount }}</span>
+          <span class="stat-label">Unassigned</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">{{ draftAssignments.size }}</span>
+          <span class="stat-label">Draft Changes</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">{{ selectedWorkspaces.size }}</span>
+          <span class="stat-label">Selected</span>
+        </div>
+      </div>
+      
+      <div class="panel-search">
+        <input type="text" 
+               placeholder="🔍 Search workspaces..." 
+               [(ngModel)]="assignmentSearchTerm"
+               class="search-box"/>
+      </div>
+      
+      <div class="panel-actions">
+        <button class="action-btn secondary" 
+                (click)="selectAllWorkspaces()"
+                [disabled]="filteredUnassignedWorkspaces.length === 0">
+          Select All ({{ filteredUnassignedWorkspaces.length }})
+        </button>
+        <button class="action-btn secondary" 
+                (click)="clearSelections()"
+                [disabled]="selectedWorkspaces.size === 0">
+          Clear Selection
+        </button>
+      </div>
+      
+      <div class="workspace-list">
+        <div class="workspace-item" 
+             *ngFor="let workspace of filteredUnassignedWorkspaces"
+             [class.selected]="selectedWorkspaces.has(workspace.id)"
+             [class.assigned]="draftAssignments.has(workspace.id)">
+          
+          <div class="workspace-checkbox">
+            <input type="checkbox" 
+                   [checked]="selectedWorkspaces.has(workspace.id)"
+                   (change)="toggleWorkspaceSelection(workspace.id)"/>
+          </div>
+          
+          <div class="workspace-info">
+            <div class="workspace-name">{{ workspace.name }}</div>
+            <div class="workspace-meta">{{ getWorkspaceSummary(workspace) }}</div>
+          </div>
+          
+          <div class="workspace-actions">
+            <div class="suggestion" *ngIf="suggestDomain(workspace) as suggested">
+              <span class="suggestion-label">💡 {{ suggested.name }}</span>
+              <button class="quick-assign-btn" 
+                      (click)="quickAssign(workspace.id)"
+                      title="Quick assign to suggested domain">
+                ⚡ Assign
+              </button>
+            </div>
+            
+            <select class="domain-select" 
+                    [value]="getAssignedDomain(workspace.id)?.id || ''"
+                    (change)="assignWorkspace(workspace.id, $any($event.target).value)">
+              <option value="">Choose domain...</option>
+              <option *ngFor="let domain of domains" 
+                      [value]="domain.id"
+                      [disabled]="domain.id === 'UNASSIGNED'">
+                {{ domain.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="empty-state" *ngIf="filteredUnassignedWorkspaces.length === 0">
+          <div class="empty-icon">🎉</div>
+          <div class="empty-text">
+            <strong *ngIf="assignmentSearchTerm">No workspaces match your search</strong>
+            <strong *ngIf="!assignmentSearchTerm">All workspaces are assigned!</strong>
+            <p *ngIf="assignmentSearchTerm">Try a different search term</p>
+            <p *ngIf="!assignmentSearchTerm">Great job organizing your tenant!</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="panel-footer">
+        <button class="action-btn secondary" 
+                (click)="cancelAssignments()"
+                [disabled]="draftAssignments.size === 0">
+          Cancel Changes
+        </button>
+        <button class="action-btn primary" 
+                (click)="saveAssignments()"
+                [disabled]="draftAssignments.size === 0">
+          💾 Save {{ draftAssignments.size }} Assignment{{ draftAssignments.size !== 1 ? 's' : '' }}
+        </button>
+      </div>
     </div>
     
     <!-- Filter Panel -->

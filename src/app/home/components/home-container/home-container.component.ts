@@ -18,7 +18,7 @@
 
 import { Component, ElementRef, ViewChild, OnInit, OnDestroy } from '@angular/core';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { Subject, forkJoin } from 'rxjs';
+import { Subject, forkJoin, of } from 'rxjs';
 import { take, takeUntil } from 'rxjs/operators';
 
 // 3D Graphics Libraries
@@ -92,6 +92,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   /** Graph nodes (workspaces and artifacts) */
   public nodes: Node[] = [];
   
+  /** Visible nodes after filtering (used by graph) */
+  private visibleNodes: Node[] = [];
+  
   /** Graph links (relationships between nodes) */
   public links: Link[] = [];
   
@@ -153,6 +156,47 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   
   /** Show only unassigned workspaces (for domain assignment workflow) */
   public showUnassignedOnly: boolean = false;
+  
+  /** Show assignment panel for bulk domain assignment */
+  public showAssignmentPanel: boolean = false;
+  
+  /** Show unassigned workspaces in graph (default: hidden) */
+  public showUnassignedWorkspaces: boolean = false;
+  
+  /** Track if we're in demo mode (no API calls) */
+  private isDemoMode: boolean = false;
+  
+  /** Draft assignments (not yet saved to API) */
+  public draftAssignments: Map<string, string> = new Map(); // workspaceId -> domainId
+  
+  /** Selected workspaces in assignment panel */
+  public selectedWorkspaces: Set<string> = new Set();
+  
+  /** Search term for assignment panel */
+  public assignmentSearchTerm: string = '';
+  
+  /** Get count of unassigned workspaces */
+  public get unassignedCount(): number {
+    return this.nodes.filter(n => 
+      n.type === NodeType.Workspace && n.metadata?.isUnassigned === true
+    ).length;
+  }
+  
+  /** Get unassigned workspace nodes */
+  public get unassignedWorkspaces(): any[] {
+    return this.nodes.filter(n => 
+      n.type === NodeType.Workspace && n.metadata?.isUnassigned === true
+    );
+  }
+  
+  /** Get filtered unassigned workspaces based on search */
+  public get filteredUnassignedWorkspaces(): any[] {
+    if (!this.assignmentSearchTerm) return this.unassignedWorkspaces;
+    const term = this.assignmentSearchTerm.toLowerCase();
+    return this.unassignedWorkspaces.filter(ws => 
+      ws.name.toLowerCase().includes(term)
+    );
+  }
   
   // =================================================================
   // FILTER PROPERTIES
@@ -390,6 +434,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
    * Useful for testing features without tenant admin access.
    */
   public loadDemoMode(): void {
+    this.isDemoMode = true; // Enable demo mode - skip all API calls
     this.domains = MOCK_DOMAINS;
     this.loadLineage(MOCK_SCANNER_RESPONSE.workspaces);
   }
@@ -585,7 +630,14 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     this.datasets = [];
     this.workspaceMetadata.clear();
     
+    // CRITICAL: Clear highlight sets to prevent dimming during initial render
+    this.highlightNodes.clear();
+    this.highlightLinks.clear();
+    this.focusedNode = null;
+    this.hoverNode = null;
+    
     let numberOfWorkspaces = 0;
+    let unassignedWorkspaces = 0;
     
     // PASS 1: Create all workspace and artifact nodes
     for (const workspace of workspaces) {
@@ -603,6 +655,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
 
       // Create workspace node - assign UNASSIGNED domain for null domainId
       const effectiveDomainId = workspace.domainId || 'UNASSIGNED';
+      const isUnassigned = !workspace.domainId;
+      if (isUnassigned) unassignedWorkspaces++;
+      
       const workspaceNode: Node = {
         id: workspace.id,
         name: workspace.name,
@@ -613,7 +668,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         metadata: {
           domainId: effectiveDomainId,
           domainName: this.domains.find(d => d.id === effectiveDomainId)?.name || 'Unassigned',
-          isUnassigned: !workspace.domainId  // Flag for special handling
+          isUnassigned: isUnassigned  // Flag for special handling
         }
       };
       
@@ -680,7 +735,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         switch (datamart.type) {
           case 'Lakehouse':
             nodeType = NodeType.Lakehouse;
-            // TODO: Create SQL Analytics Endpoint node
+            // Detect Lakehouse type for SQL endpoint creation
             break;
           case 'Datawarehouse':
             nodeType = NodeType.DataWarehouse;
@@ -725,11 +780,21 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
             }
           };
           this.nodes.push(sqlEndpointNode);
+          
+          // Link from lakehouse to SQL endpoint
           this.links.push({
             source: datamartNode.id,
             target: sqlEndpointNode.id,
             type: LinkType.Contains
           });
+          
+          // ALSO link from workspace to SQL endpoint so it stays in the workspace cluster
+          this.links.push({
+            source: workspaceNode.id,
+            target: sqlEndpointNode.id,
+            type: LinkType.Contains
+          });
+          
         }
       }
 
@@ -969,15 +1034,102 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         ])];
       }
 
-      this.nodes = this.nodes.filter(node => limitedWorkspaceNodes.includes(node.workspaceId));
-      const nodeIds = this.nodes.map(node => node.id);
-      validLinks = validLinks.filter(link => nodeIds.includes(link.source) && nodeIds.includes(link.target));
+      // Filter nodes: keep workspaces in limited set AND their artifacts
+      const limitedWorkspaceSet = new Set(limitedWorkspaceNodes);
+      const beforeCount = this.nodes.length;
+      
+      this.nodes = this.nodes.filter(node => {
+        // Keep workspace if in limited set
+        if (node.type === NodeType.Workspace) {
+          return limitedWorkspaceSet.has(node.id);
+        }
+        // Keep artifact ONLY if it has a workspaceId AND that workspace is in limited set
+        if (!node.workspaceId) {
+          console.warn('[ORPHAN] Removing artifact without workspaceId:', node.name, NodeType[node.type]);
+          return false;
+        }
+        return limitedWorkspaceSet.has(node.workspaceId);
+      });
+      
+      // Filter links: keep only links between remaining nodes
+      const nodeIds = new Set(this.nodes.map(node => node.id));
+      const beforeLinkCount = validLinks.length;
+      validLinks = validLinks.filter(link => 
+        nodeIds.has(link.source) && nodeIds.has(link.target)
+      );
+      
     }
+    
+    // PASS 5: Remove orphaned artifacts (artifacts without valid workspace in graph)
+    const workspaceIds = new Set(this.nodes.filter(n => n.type === NodeType.Workspace).map(n => n.id));
+    const beforeOrphanRemoval = this.nodes.length;
+    
+    console.log(`[PASS 5] Checking for orphaned artifacts. Valid workspaces:`, Array.from(workspaceIds));
+    
+    this.nodes = this.nodes.filter(node => {
+      if (node.type === NodeType.Workspace) return true;
+      if (!node.workspaceId) {
+        console.error('[ORPHAN] Artifact without workspaceId:', node.name, NodeType[node.type], node.id);
+        return false;
+      }
+      if (!workspaceIds.has(node.workspaceId)) {
+        console.error('[ORPHAN] Artifact with non-existent workspace:', node.name, 'workspaceId:', node.workspaceId, 'artifactId:', node.id);
+        return false;
+      }
+      return true;
+    });
+    
+    if (beforeOrphanRemoval !== this.nodes.length) {
+      console.log(`[Orphan Cleanup] Removed ${beforeOrphanRemoval - this.nodes.length} orphaned artifacts`);
+      // Re-filter links after removing orphans
+      const nodeIds = new Set(this.nodes.map(n => n.id));
+      validLinks = validLinks.filter(link => nodeIds.has(link.source) && nodeIds.has(link.target));
+    }
+    
+    // FINAL SUMMARY
+    const finalWorkspaces = this.nodes.filter(n => n.type === NodeType.Workspace);
+    const finalUnassigned = finalWorkspaces.filter(n => n.metadata?.isUnassigned);
+    const finalArtifacts = this.nodes.filter(n => n.type !== NodeType.Workspace);
+    
+    // Log summary for debugging
+    console.log(`✓ Loaded ${finalWorkspaces.length} workspaces (${finalUnassigned.length} unassigned), ${finalArtifacts.length} artifacts, ${validLinks.length} links`);
 
-    // RENDER THE GRAPH
+    // FILTER DATA before passing to graph - remove unassigned workspaces and their artifacts
+    let visibleNodes = this.nodes;
+    let visibleLinks = validLinks;
+    
+    if (!this.showUnassignedWorkspaces) {
+      const unassignedWorkspaceIds = new Set(
+        this.nodes
+          .filter(n => n.type === NodeType.Workspace && n.metadata?.isUnassigned)
+          .map(n => n.id)
+      );
+      
+      // Remove unassigned workspaces and their artifacts
+      visibleNodes = this.nodes.filter(node => {
+        if (node.type === NodeType.Workspace && node.metadata?.isUnassigned) {
+          return false;
+        }
+        if (node.type !== NodeType.Workspace && node.workspaceId && unassignedWorkspaceIds.has(node.workspaceId)) {
+          return false;
+        }
+        return true;
+      });
+      
+      // Remove links connected to removed nodes
+      const visibleNodeIds = new Set(visibleNodes.map(n => n.id));
+      visibleLinks = validLinks.filter(link => 
+        visibleNodeIds.has(link.source) && visibleNodeIds.has(link.target)
+      );
+    }
+    
+    // Store visible nodes for domain boundaries and forces
+    this.visibleNodes = visibleNodes;
+
+    // RENDER THE GRAPH with filtered data
     const gData = {
-      nodes: this.nodes,
-      links: validLinks
+      nodes: visibleNodes,
+      links: visibleLinks
     };
 
     const graph = new ForceGraph3D(document.getElementById('3d-graph'), {
@@ -990,40 +1142,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       .width(window.innerWidth)
       .height(window.innerHeight)
       .backgroundColor('#0a0e27')
-      .enableNodeDrag(true)  // Enable drag for domain assignment
-      .onNodeDrag((node: any) => {
-        // Track dragging for visual feedback
-        if (node.type === NodeType.Workspace) {
-          // First drag? Disable clustering and clear previous highlights
-          if (!this.draggedWorkspace) {
-            this.clearDomainHighlights();
-            if (this.graphInstance) {
-              this.graphInstance.d3Force('domainCluster', null);
-            }
-          }
-          
-          this.draggedWorkspace = node;
-          this.highlightNearestDomain(node);
-          
-          // Update node appearance during drag
-          if (this.graphInstance) {
-            this.graphInstance.nodeColor(this.graphInstance.nodeColor());
-          }
-        }
-      })
-      .onNodeDragEnd((node: any) => {
-        // Handle domain assignment on drop
-        if (node.type === NodeType.Workspace) {
-          // RE-ENABLE domain clustering
-          if (this.graphInstance) {
-            this.graphInstance.d3Force('domainCluster', this.createDomainClusterForce());
-          }
-          
-          this.handleWorkspaceDrop(node);
-          this.draggedWorkspace = null;
-          this.clearDomainHighlights();
-        }
-      })
+      .enableNodeDrag(false)  // Disable drag - use dedicated assignment panel instead
       .nodeRelSize(8)
       .nodeVal((node: any) => {
         if (node.type === NodeType.Workspace && node.metadata?.isUnassigned) {
@@ -1031,9 +1150,8 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         }
         return node.type === NodeType.Workspace ? 15 : 4;
       })
-      .linkWidth((link: any) => link.type === LinkType.CrossWorkspace ? 2 : 1)
       .d3Force('domainCluster', this.createDomainClusterForce())
-      .linkOpacity(0.5)
+      .linkOpacity(1.0)  // Full opacity - we control it in linkColor
       // Directional arrows with elegant styling
       .linkDirectionalArrowLength((link: any) => {
         // CrossWorkspace: 8px arrows (data dependencies) - more prominent
@@ -1280,19 +1398,35 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         return this.getNodeColor(node.type as NodeType);
       })
       .linkColor((link: any) => {
-        // Highlight active links with bright colors
-        if (this.highlightLinks.size > 0) {
-          if (this.highlightLinks.has(link)) {
-            // Bright colors for highlighted links
-            if (link.type === LinkType.CrossWorkspace) return COLOR_ARROW_CROSS_WS;
-            return 'rgba(200,200,200,0.8)';
+        const color = (() => {
+          // Highlight active links with bright colors
+          if (this.highlightLinks.size > 0) {
+            if (this.highlightLinks.has(link)) {
+              // Bright colors for highlighted links
+              if (link.type === LinkType.CrossWorkspace) return COLOR_ARROW_CROSS_WS;
+              if (link.type === LinkType.Contains) return '#FF6600'; // BRIGHT ORANGE
+              return 'rgba(200,200,200,0.8)';
+            }
+            // Dim non-highlighted links
+            return 'rgba(100,100,100,0.1)';
           }
-          // Dim non-highlighted links
-          return 'rgba(100,100,100,0.1)';
+          // Default colors - make Contains VERY visible
+          if (link.type === LinkType.CrossWorkspace) return 'rgba(0,188,242,0.5)'; // Cyan
+          if (link.type === LinkType.Contains) return 'rgba(255,102,0,0.8)'; // BRIGHT ORANGE - HIGH OPACITY
+          return 'rgba(150,150,150,0.3)';
+        })();
+        
+        if (link.type === LinkType.Contains && Math.random() < 0.01) {
+          console.log('[LINK COLOR]', link.type, 'from', link.source, 'to', link.target, 'color:', color);
         }
-        // Default colors when nothing highlighted
-        if (link.type === LinkType.CrossWorkspace) return 'rgba(0,188,242,0.4)';
-        return 'rgba(150,150,150,0.2)';
+        
+        return color;
+      })
+      .linkWidth((link: any) => {
+        // Make Contains links thicker for visibility
+        if (link.type === LinkType.Contains) return 2; // Thick orange lines
+        if (link.type === LinkType.CrossWorkspace) return 2;
+        return 1;
       });
 
     this.shouldShowGraph = true;
@@ -1321,9 +1455,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       const scene = this.graphInstance.scene();
       
-      // Group workspace nodes by domain
+      // Group workspace nodes by domain - USE VISIBLE NODES ONLY
       const domainNodes: Map<string, any[]> = new Map();
-      this.nodes.forEach(node => {
+      this.visibleNodes.forEach(node => {
         if (node.type === NodeType.Workspace && node.metadata?.domainId) {
           const domainId = node.metadata.domainId;
           if (!domainNodes.has(domainId)) {
@@ -1332,6 +1466,8 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           domainNodes.get(domainId)!.push(node);
         }
       });
+      
+      console.log(`[BOUNDARIES] Creating spheres for ${domainNodes.size} domains with visible workspaces`);
 
       // Create transparent boundary sphere for each domain
       domainNodes.forEach((nodes, domainId) => {
@@ -1462,6 +1598,288 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     URL.revokeObjectURL(url);
   }
 
+  // =================================================================
+  // DOMAIN ASSIGNMENT PANEL
+  // =================================================================
+
+  /**
+   * Opens the assignment panel and filters graph to unassigned workspaces
+   */
+  public openAssignmentPanel(): void {
+    this.showAssignmentPanel = true;
+    this.showUnassignedOnly = true;
+    this.applyFilters();
+    this.draftAssignments.clear();
+    this.selectedWorkspaces.clear();
+  }
+
+  /**
+   * Closes assignment panel and resets view
+   */
+  public closeAssignmentPanel(): void {
+    this.showAssignmentPanel = false;
+    this.showUnassignedOnly = false;
+    this.applyFilters();
+    this.draftAssignments.clear();
+    this.selectedWorkspaces.clear();
+    this.assignmentSearchTerm = '';
+  }
+
+  /**
+   * Suggests domain for a workspace based on name, artifacts, etc.
+   */
+  public suggestDomain(workspace: any): Domain | null {
+    const wsName = workspace.name.toLowerCase();
+    
+    // Try exact keyword matching first
+    for (const domain of this.domains) {
+      if (domain.id === 'UNASSIGNED') continue;
+      
+      const domainName = domain.name.toLowerCase();
+      const domainKeywords = domainName.split(/[\s-_]+/);
+      
+      // Check if workspace name contains domain keywords
+      for (const keyword of domainKeywords) {
+        if (keyword.length > 3 && wsName.includes(keyword)) {
+          return domain;
+        }
+      }
+    }
+    
+    // Check for common patterns
+    const patterns: {[key: string]: string[]} = {
+      'sales': ['sales', 'revenue', 'crm', 'customer'],
+      'finance': ['finance', 'accounting', 'budget', 'expense'],
+      'marketing': ['marketing', 'campaign', 'social', 'brand'],
+      'hr': ['hr', 'human', 'employee', 'talent', 'people'],
+      'it': ['it', 'tech', 'infrastructure', 'system'],
+      'operations': ['ops', 'operations', 'supply', 'logistics']
+    };
+    
+    for (const [category, keywords] of Object.entries(patterns)) {
+      for (const keyword of keywords) {
+        if (wsName.includes(keyword)) {
+          const matchedDomain = this.domains.find(d => 
+            d.id !== 'UNASSIGNED' && d.name.toLowerCase().includes(category)
+          );
+          if (matchedDomain) return matchedDomain;
+        }
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Assigns workspace to domain (draft mode - visual only)
+   */
+  public assignWorkspace(workspaceId: string, domainId: string): void {
+    this.draftAssignments.set(workspaceId, domainId);
+    
+    // Update visual immediately for preview
+    const node = this.nodes.find(n => n.id === workspaceId);
+    if (node) {
+      const domain = this.domains.find(d => d.id === domainId);
+      if (domain) {
+        node.metadata = node.metadata || {};
+        node.metadata.domainId = domainId;
+        node.metadata.domainName = domain.name;
+        node.metadata.isUnassigned = false;
+        node.metadata.isDraft = true; // Mark as draft
+        
+        if (this.graphInstance) {
+          this.graphInstance.nodeColor(this.graphInstance.nodeColor());
+          this.graphInstance.nodeVal(this.graphInstance.nodeVal());
+        }
+      }
+    }
+  }
+
+  /**
+   * Quick assign using suggested domain
+   */
+  public quickAssign(workspaceId: string): void {
+    const workspace = this.nodes.find(n => n.id === workspaceId);
+    if (!workspace) return;
+    
+    const suggestedDomain = this.suggestDomain(workspace);
+    if (suggestedDomain) {
+      this.assignWorkspace(workspaceId, suggestedDomain.id);
+    }
+  }
+
+  /**
+   * Toggle workspace selection for bulk operations
+   */
+  public toggleWorkspaceSelection(workspaceId: string): void {
+    if (this.selectedWorkspaces.has(workspaceId)) {
+      this.selectedWorkspaces.delete(workspaceId);
+    } else {
+      this.selectedWorkspaces.add(workspaceId);
+    }
+  }
+
+  /**
+   * Select all filtered workspaces
+   */
+  public selectAllWorkspaces(): void {
+    this.filteredUnassignedWorkspaces.forEach(ws => {
+      this.selectedWorkspaces.add(ws.id);
+    });
+  }
+
+  /**
+   * Clear all selections
+   */
+  public clearSelections(): void {
+    this.selectedWorkspaces.clear();
+  }
+
+  /**
+   * Bulk assign selected workspaces to a domain
+   */
+  public bulkAssignSelected(domainId: string): void {
+    this.selectedWorkspaces.forEach(wsId => {
+      this.assignWorkspace(wsId, domainId);
+    });
+  }
+
+  /**
+   * Save all draft assignments (in demo mode: just visual, in real mode: API call)
+   */
+  public async saveAssignments(): Promise<void> {
+    if (this.draftAssignments.size === 0) {
+      alert('No assignments to save');
+      return;
+    }
+
+    const assignments = Array.from(this.draftAssignments.entries()).map(([workspaceId, domainId]) => ({
+      workspaceId,
+      domainId
+    }));
+
+    // DEMO MODE: Just update visual state, no API calls
+    if (this.isDemoMode) {
+      console.log(`✓ Demo mode: Saved ${assignments.length} workspace assignments locally`);
+      
+      // Remove draft flag from all nodes
+      this.nodes.forEach(node => {
+        if (node.metadata?.isDraft) {
+          delete node.metadata.isDraft;
+        }
+      });
+      
+      // Update graph colors
+      if (this.graphInstance) {
+        this.graphInstance.nodeColor(this.graphInstance.nodeColor());
+      }
+      
+      // Clear draft state
+      this.draftAssignments.clear();
+      this.selectedWorkspaces.clear();
+      
+      // Show success message
+      alert(`✓ Successfully assigned ${assignments.length} workspace${assignments.length > 1 ? 's' : ''} to domains!\n\n(Demo Mode - changes are visual only)`);
+      
+      // Close panel
+      this.closeAssignmentPanel();
+      return;
+    }
+
+    // REAL MODE: Call Fabric Admin API
+    this.proxy.batchAssignWorkspacesToDomains(assignments).subscribe(
+      (results) => {
+        console.log(`✓ Assigned ${assignments.length} workspaces to domains`);
+        
+        // Remove draft flag from all nodes
+        this.nodes.forEach(node => {
+          if (node.metadata?.isDraft) {
+            delete node.metadata.isDraft;
+          }
+        });
+        
+        // Clear draft state
+        this.draftAssignments.clear();
+        this.selectedWorkspaces.clear();
+        
+        // Show success message
+        alert(`✓ Successfully assigned ${assignments.length} workspace${assignments.length > 1 ? 's' : ''} to domains!`);
+        
+        // Close panel
+        this.closeAssignmentPanel();
+      },
+      (error) => {
+        console.error('✗ Failed to save assignments:', error);
+        
+        let errorMessage = 'Failed to save domain assignments';
+        if (error.status === 403) {
+          errorMessage = 'You don\'t have permission to assign workspaces to domains';
+        } else if (error.error?.error?.message) {
+          errorMessage = error.error.error.message;
+        }
+        
+        alert(`Assignment Error: ${errorMessage}\n\nYour visual changes will be reverted.`);
+        
+        // Revert all draft assignments
+        this.cancelAssignments();
+      }
+    );
+  }
+
+  /**
+   * Cancel all draft assignments and revert visual changes
+   */
+  public cancelAssignments(): void {
+    // Revert visual changes
+    this.draftAssignments.forEach((domainId, workspaceId) => {
+      const node = this.nodes.find(n => n.id === workspaceId);
+      if (node) {
+        node.metadata.domainId = 'UNASSIGNED';
+        node.metadata.domainName = '⚠️ Unassigned Workspaces';
+        node.metadata.isUnassigned = true;
+        delete node.metadata.isDraft;
+      }
+    });
+    
+    if (this.graphInstance) {
+      this.graphInstance.nodeColor(this.graphInstance.nodeColor());
+      this.graphInstance.nodeVal(this.graphInstance.nodeVal());
+    }
+    
+    this.closeAssignmentPanel();
+  }
+
+  /**
+   * Get assigned domain for workspace (including drafts)
+   */
+  public getAssignedDomain(workspaceId: string): Domain | null {
+    const domainId = this.draftAssignments.get(workspaceId);
+    if (domainId) {
+      return this.domains.find(d => d.id === domainId) || null;
+    }
+    return null;
+  }
+
+  /**
+   * Get workspace artifact summary for display
+   */
+  public getWorkspaceSummary(workspace: any): string {
+    const artifacts = this.nodes.filter(n => n.workspaceId === workspace.id);
+    const counts: {[key: string]: number} = {};
+    
+    artifacts.forEach(artifact => {
+      const type = NodeType[artifact.type];
+      counts[type] = (counts[type] || 0) + 1;
+    });
+    
+    const summary = Object.entries(counts)
+      .map(([type, count]) => `${count} ${type}${count > 1 ? 's' : ''}`)
+      .slice(0, 3)
+      .join(', ');
+    
+    return summary || 'No artifacts';
+  }
+
   public onSearchChange(): void {
     this.filterGraph();
   }
@@ -1526,8 +1944,20 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   }
 
   public toggleUnassignedOnly(): void {
-    this.showUnassignedOnly = !this.showUnassignedOnly;
+    if (!this.showUnassignedOnly) {
+      this.openAssignmentPanel();
+    } else {
+      this.closeAssignmentPanel();
+    }
+  }
+  
+  /**
+   * Toggle showing unassigned workspaces in the graph
+   */
+  public toggleShowUnassignedWorkspaces(): void {
+    this.showUnassignedWorkspaces = !this.showUnassignedWorkspaces;
     this.applyFilters();
+    console.log(`[Unassigned] ${this.showUnassignedWorkspaces ? 'Showing' : 'Hiding'} ${this.unassignedCount} unassigned workspaces`);
   }
 
   public toggleDomain(domainId: string): void {
@@ -1546,6 +1976,35 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Helper function to check if a workspace node would be visible
+   * This centralizes the workspace visibility logic
+   */
+  private isWorkspaceVisible(workspace: any): boolean {
+    if (!workspace || workspace.type !== NodeType.Workspace) return false;
+    
+    // Check unassigned filter
+    if (!this.showUnassignedWorkspaces && workspace.metadata?.isUnassigned) {
+      return false;
+    }
+    
+    // Check unassigned-only mode
+    if (this.showUnassignedOnly) {
+      return workspace.metadata?.isUnassigned === true;
+    }
+    
+    // Check domain filters
+    if (workspace.metadata?.domainId) {
+      if (this.hiddenDomains.has(workspace.metadata.domainId)) return false;
+      if (this.isolatedDomain && workspace.metadata.domainId !== this.isolatedDomain) return false;
+    }
+    
+    // Check workspace type filter
+    if (!this.showWorkspaces) return false;
+    
+    return true;
+  }
+
   public applyFilters(): void {
     if (!this.graphInstance) return;
     
@@ -1553,41 +2012,48 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     this.domainBoundaryObjects.forEach((objects, domainId) => {
       // In unassigned-only mode, show ALL domain boundaries
       // Otherwise, apply normal domain filters
-      const shouldShow = this.showUnassignedOnly 
+      let shouldShow = this.showUnassignedOnly 
         ? true 
         : (!this.hiddenDomains.has(domainId) && (!this.isolatedDomain || domainId === this.isolatedDomain));
+      
+      // Hide UNASSIGNED domain boundary if toggle is off
+      if (domainId === 'UNASSIGNED' && !this.showUnassignedWorkspaces) {
+        shouldShow = false;
+      }
+      
       objects.forEach(obj => obj.visible = shouldShow);
     });
     
     this.graphInstance
       .nodeVisibility((node: any) => {
-        // PRIORITY 1: Unassigned-only mode - show ONLY unassigned workspaces
-        if (this.showUnassignedOnly) {
-          if (node.type === NodeType.Workspace) {
-            // Show ONLY workspaces in UNASSIGNED domain
-            return node.metadata?.isUnassigned === true;
-          }
-          // Hide all artifacts
-          return false;
+        // Handle workspace nodes
+        if (node.type === NodeType.Workspace) {
+          return this.isWorkspaceVisible(node);
         }
         
-        // PRIORITY 2: Domain filter
-        if (node.type === NodeType.Workspace && node.metadata?.domainId) {
-          if (this.hiddenDomains.has(node.metadata.domainId)) return false;
-          if (this.isolatedDomain && node.metadata.domainId !== this.isolatedDomain) return false;
-        }
-        
-        // For non-workspace artifacts, check their parent workspace's domain
-        if (node.type !== NodeType.Workspace && node.workspaceId) {
+        // Handle artifact nodes - CRITICAL: Check if parent workspace is visible
+        if (node.workspaceId) {
           const workspace = this.nodes.find(n => n.id === node.workspaceId && n.type === NodeType.Workspace);
-          if (workspace?.metadata?.domainId) {
-            if (this.hiddenDomains.has(workspace.metadata.domainId)) return false;
-            if (this.isolatedDomain && workspace.metadata.domainId !== this.isolatedDomain) return false;
+          
+          if (!workspace) {
+            console.error('[VISIBILITY ERROR] Artifact has no workspace in graph:', {
+              artifactName: node.name,
+              artifactType: NodeType[node.type],
+              workspaceId: node.workspaceId,
+              totalWorkspaces: this.nodes.filter(n => n.type === NodeType.Workspace).length
+            });
+            return false;
           }
+          
+          // KEY FIX: If parent workspace is not visible, hide the artifact
+          const wsVisible = this.isWorkspaceVisible(workspace);
+          if (!wsVisible) {
+            console.log('[HIDE ARTIFACT] Hiding artifact because workspace hidden:', node.name, 'workspace:', workspace.name);
+          }
+          return wsVisible;
         }
         
         // Artifact type filters
-        if (node.type === NodeType.Workspace && !this.showWorkspaces) return false;
         if (node.type === NodeType.Lakehouse && !this.showLakehouses) return false;
         if (node.type === NodeType.DataWarehouse && !this.showWarehouses) return false;
         if (node.type === NodeType.Report && !this.showReports) return false;
@@ -1613,29 +2079,38 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         if (link.type === LinkType.CrossWorkspace && !this.showCrossWorkspaceLinks) return false;
         if (link.type === LinkType.Contains && !this.showContainsLinks) return false;
         
-        // Get actual node objects (force-graph uses node references)
+        // Get actual node objects (force-graph uses node references after initial load)
         const sourceNode = typeof link.source === 'object' ? link.source : this.nodes.find(n => n.id === link.source);
         const targetNode = typeof link.target === 'object' ? link.target : this.nodes.find(n => n.id === link.target);
         
         if (!sourceNode || !targetNode) return false;
         
-        // Check if either endpoint is in a hidden/non-isolated domain
-        const checkDomain = (node: any) => {
-          if (node.type === NodeType.Workspace && node.metadata?.domainId) {
-            if (this.hiddenDomains.has(node.metadata.domainId)) return false;
-            if (this.isolatedDomain && node.metadata.domainId !== this.isolatedDomain) return false;
-          } else if (node.workspaceId) {
-            // For artifacts, check their workspace's domain
-            const workspace = this.nodes.find(n => n.id === node.workspaceId && n.type === NodeType.Workspace);
-            if (workspace?.metadata?.domainId) {
-              if (this.hiddenDomains.has(workspace.metadata.domainId)) return false;
-              if (this.isolatedDomain && workspace.metadata.domainId !== this.isolatedDomain) return false;
-            }
-          }
-          return true;
-        };
+        // CRITICAL FIX: Check if BOTH endpoints would be visible according to node visibility rules
+        // This prevents orphaned artifacts by hiding links when either endpoint is hidden
         
-        return checkDomain(sourceNode) && checkDomain(targetNode);
+        // Check source node visibility
+        if (sourceNode.type === NodeType.Workspace) {
+          if (!this.isWorkspaceVisible(sourceNode)) return false;
+        } else {
+          // Source is an artifact - check its workspace visibility
+          if (sourceNode.workspaceId) {
+            const sourceWS = this.nodes.find(n => n.id === sourceNode.workspaceId && n.type === NodeType.Workspace);
+            if (!sourceWS || !this.isWorkspaceVisible(sourceWS)) return false;
+          }
+        }
+        
+        // Check target node visibility  
+        if (targetNode.type === NodeType.Workspace) {
+          if (!this.isWorkspaceVisible(targetNode)) return false;
+        } else {
+          // Target is an artifact - check its workspace visibility
+          if (targetNode.workspaceId) {
+            const targetWS = this.nodes.find(n => n.id === targetNode.workspaceId && n.type === NodeType.Workspace);
+            if (!targetWS || !this.isWorkspaceVisible(targetWS)) return false;
+          }
+        }
+        
+        return true;
       });
   }
 
@@ -1791,253 +2266,4 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     forkJoin(observables).pipe(take(1)).subscribe();
   }
 
-  // =================================================================
-  // DRAG-AND-DROP DOMAIN ASSIGNMENT
-  // =================================================================
-
-  /**
-   * Highlights the nearest domain boundary when dragging a workspace
-   * Provides visual feedback showing which domain the workspace will be assigned to
-   */
-  private highlightNearestDomain(node: any): void {
-    if (!node || !node.x || !node.y || !node.z) {
-      console.warn('Node missing coordinates during drag:', node);
-      return;
-    }
-
-    let nearestDomain: Domain | null = null;
-    let minDistance = Infinity;
-
-    // Calculate current domain centers dynamically
-    const domainCenters = new Map<string, { x: number; y: number; z: number; count: number }>();
-    this.domains.forEach(domain => {
-      domainCenters.set(domain.id, { x: 0, y: 0, z: 0, count: 0 });
-    });
-
-    this.nodes.forEach((n: any) => {
-      if (n.type === NodeType.Workspace && n.metadata?.domainId && n.x && n.y && n.z) {
-        const center = domainCenters.get(n.metadata.domainId);
-        if (center) {
-          center.x += n.x;
-          center.y += n.y;
-          center.z += n.z;
-          center.count++;
-        }
-      }
-    });
-
-    // Average the centers
-    domainCenters.forEach(center => {
-      if (center.count > 0) {
-        center.x /= center.count;
-        center.y /= center.count;
-        center.z /= center.count;
-      }
-    });
-
-    // Find which domain the workspace is currently inside/nearest to
-    for (const domain of this.domains) {
-      const center = domainCenters.get(domain.id);
-      if (!center || center.count === 0) continue;
-
-      const dx = node.x - center.x;
-      const dy = node.y - center.y;
-      const dz = node.z - center.z;
-      const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-      // Check if within domain boundary (use 150 as default radius)
-      const domainRadius = 150;
-      if (distance < domainRadius && distance < minDistance) {
-        nearestDomain = domain;
-        minDistance = distance;
-      }
-    }
-
-    // Update domain boundary visual feedback
-    this.domainBoundaryObjects.forEach((objects, domainId) => {
-      const isTarget = nearestDomain && domainId === nearestDomain.id;
-      objects.forEach(obj => {
-        if (obj.type === 'LineSegments') {
-          const material = (obj as THREE.LineSegments).material as THREE.LineBasicMaterial;
-          material.color.setHex(isTarget ? 0x00FF00 : 0xFFFFFF);  // Green when target, white otherwise
-          material.opacity = isTarget ? 1.0 : 0.3;
-        }
-      });
-    });
-  }
-
-  /**
-   * Clears all domain boundary highlights
-   */
-  private clearDomainHighlights(): void {
-    this.domainBoundaryObjects.forEach((objects) => {
-      objects.forEach(obj => {
-        if (obj.type === 'LineSegments') {
-          (obj as any).material.color.setHex(0x4a5568);
-          (obj as any).material.opacity = 0.3;
-        }
-      });
-    });
-  }
-
-  /**
-   * Handles workspace drop - assigns to nearest domain if dropped inside boundary
-   * Shows snackbar notification with assignment result
-   */
-  private handleWorkspaceDrop(node: any): void {
-    if (!node.x || !node.y || !node.z) return;
-
-    // Calculate current domain centers dynamically
-    const domainCenters = new Map<string, { x: number; y: number; z: number; count: number }>();
-    this.domains.forEach(domain => {
-      domainCenters.set(domain.id, { x: 0, y: 0, z: 0, count: 0 });
-    });
-
-    this.nodes.forEach((n: any) => {
-      if (n.type === NodeType.Workspace && n.metadata?.domainId && n.x && n.y && n.z && n.id !== node.id) {
-        const center = domainCenters.get(n.metadata.domainId);
-        if (center) {
-          center.x += n.x;
-          center.y += n.y;
-          center.z += n.z;
-          center.count++;
-        }
-      }
-    });
-
-    // Average the centers
-    domainCenters.forEach(center => {
-      if (center.count > 0) {
-        center.x /= center.count;
-        center.y /= center.count;
-        center.z /= center.count;
-      }
-    });
-
-    let targetDomain: Domain | null = null;
-    let minDistance = Infinity;
-
-    // Find if dropped inside any domain
-    for (const domain of this.domains) {
-      const center = domainCenters.get(domain.id);
-      if (!center || center.count === 0) continue;
-
-      const dx = node.x - center.x;
-      const dy = node.y - center.y;
-      const dz = node.z - center.z;
-      const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-      const domainRadius = 150;  // Default radius
-      if (distance < domainRadius && distance < minDistance) {
-        targetDomain = domain;
-        minDistance = distance;
-      }
-    }
-
-    const previousDomainId = node.metadata?.domainId;
-    const previousDomainName = node.metadata?.domainName || 'Unassigned';
-
-    if (targetDomain) {
-      // Assign workspace to new domain
-      node.metadata = node.metadata || {};
-      
-      // If dropped in UNASSIGNED domain, treat as unassign
-      if (targetDomain.id === 'UNASSIGNED') {
-        node.metadata.domainId = 'UNASSIGNED';
-        node.metadata.domainName = '⚠️ Unassigned Workspaces';
-        node.metadata.isUnassigned = true;
-      } else {
-        node.metadata.domainId = targetDomain.id;
-        node.metadata.domainName = targetDomain.name;
-        node.metadata.isUnassigned = false;
-      }
-
-      // Update workspace metadata
-      const wsMetadata = this.workspaceMetadata.get(node.id);
-      if (wsMetadata) {
-        wsMetadata.domainId = targetDomain.id;
-      }
-
-      // Log assignment (silent for better UX)
-      const message = previousDomainId
-        ? `✓ "${node.name}" → ${targetDomain.name}`
-        : `✓ "${node.name}" → ${targetDomain.name}`;
-      console.log('[Domain Assignment]', message);
-
-      // Re-apply clustering force to animate into new domain
-      if (this.graphInstance) {
-        this.graphInstance.d3Force('domainCluster', this.createDomainClusterForce());
-        this.graphInstance.nodeColor(this.graphInstance.nodeColor());
-        this.graphInstance.nodeVal(this.graphInstance.nodeVal());
-      }
-
-      // Callback for API integration
-      this.onWorkspaceAssignedToDomain(node.id, targetDomain.id, previousDomainId);
-
-    } else if (previousDomainId) {
-      // Dropped outside all domains - unassign
-      node.metadata.domainId = null;
-      node.metadata.domainName = null;
-
-      const wsMetadata = this.workspaceMetadata.get(node.id);
-      if (wsMetadata) {
-        wsMetadata.domainId = null;
-      }
-
-      console.log('[Domain Unassignment]', `✓ "${node.name}" removed from "${previousDomainName}"`);
-
-      if (this.graphInstance) {
-        this.graphInstance.d3Force('domainCluster', this.createDomainClusterForce());
-        this.graphInstance.nodeColor(this.graphInstance.nodeColor());
-        this.graphInstance.nodeVal(this.graphInstance.nodeVal());
-      }
-      
-      // Callback for API integration
-      this.onWorkspaceUnassignedFromDomain(node.id, previousDomainId);
-    }
-  }
-
-  /**
-   * Callback when workspace is assigned to a domain
-   * Override this method to integrate with Microsoft Fabric API
-   * 
-   * @param workspaceId - The workspace that was assigned
-   * @param domainId - The domain it was assigned to
-   * @param previousDomainId - Previous domain (if any)
-   */
-  private onWorkspaceAssignedToDomain(workspaceId: string, domainId: string, previousDomainId: string | null): void {
-    console.log(`[Domain Assignment] Workspace ${workspaceId} assigned to domain ${domainId}`, {
-      workspaceId,
-      domainId,
-      previousDomainId
-    });
-    
-    // TODO: Make API call to persist assignment in Microsoft Fabric
-    // Example:
-    // this.proxy.assignWorkspaceToDomain(workspaceId, domainId).subscribe(
-    //   () => console.log('Assignment saved successfully'),
-    //   (error) => console.error('Failed to save assignment', error)
-    // );
-  }
-
-  /**
-   * Callback when workspace is unassigned from a domain
-   * Override this method to integrate with Microsoft Fabric API
-   * 
-   * @param workspaceId - The workspace that was unassigned
-   * @param previousDomainId - The domain it was removed from
-   */
-  private onWorkspaceUnassignedFromDomain(workspaceId: string, previousDomainId: string): void {
-    console.log(`[Domain Assignment] Workspace ${workspaceId} unassigned from domain ${previousDomainId}`, {
-      workspaceId,
-      previousDomainId
-    });
-    
-    // TODO: Make API call to remove assignment in Microsoft Fabric
-    // Example:
-    // this.proxy.unassignWorkspaceFromDomain(workspaceId).subscribe(
-    //   () => console.log('Unassignment saved successfully'),
-    //   (error) => console.error('Failed to save unassignment', error)
-    // );
-  }
 }
