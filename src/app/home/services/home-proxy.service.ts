@@ -26,7 +26,7 @@ export class HomeProxy {
       headers: {
         'Content-Type': 'application/json',
         authorization: 'Bearer ' + this.token,
-        'X-POWERBI-ADMIN-CLIENT-NAME': 'PowerBEye'
+        'X-POWERBI-ADMIN-CLIENT-NAME': 'FabricBEyeAI'
       }
     };
 
@@ -40,7 +40,7 @@ export class HomeProxy {
       url: `https://${apiUrl}/v1.0/myorg/admin/workspaces/getInfo?lineage=true`,
       headers: {
         authorization: 'Bearer ' + this.token,
-        'X-POWERBI-ADMIN-CLIENT-NAME': 'PowerBEye'
+        'X-POWERBI-ADMIN-CLIENT-NAME': 'FabricBEyeAI'
       }
     };
 
@@ -92,7 +92,7 @@ export class HomeProxy {
           headers: {
             'Content-Type': 'application/json',
             authorization: 'Bearer ' + this.token,
-            'X-POWERBI-ADMIN-CLIENT-NAME': 'PowerBEye'
+            'X-POWERBI-ADMIN-CLIENT-NAME': 'FabricBEyeAI'
           }
         }
       )

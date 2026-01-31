@@ -1,4 +1,4 @@
-# PowerBEye Code Structure - Refactoring Guide
+# FabricBEyeAI Code Structure - Refactoring Guide
 
 ## Component Organization
 

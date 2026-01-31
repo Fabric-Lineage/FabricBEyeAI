@@ -1,8 +1,8 @@
-# PowerBEye Developer Guide
+# FabricBEyeAI Developer Guide
 
 ## Overview
 
-PowerBEye is a **3D interactive visualization tool** for Microsoft Fabric workspaces, providing comprehensive lineage tracking and relationship mapping across the entire Fabric ecosystem.
+FabricBEyeAI is a **3D interactive visualization tool** for Microsoft Fabric workspaces, providing comprehensive lineage tracking and relationship mapping across the entire Fabric ecosystem.
 
 ### Key Features
 - **23 Artifact Types Supported** - Complete Fabric catalog coverage
@@ -53,7 +53,7 @@ Scanner API → home-proxy.service → scan.service → home-container → 3D Gr
 ## Microsoft Fabric Integration
 
 ### Scanner API v1.0
-PowerBEye integrates with the **Microsoft Fabric Admin API** to scan tenant workspaces:
+FabricBEyeAI integrates with the **Microsoft Fabric Admin API** to scan tenant workspaces:
 
 ```typescript
 GET /v1.0/myorg/admin/workspaces/scanResult/{scanId}
@@ -379,5 +379,5 @@ See `LICENSE` file for details.
 
 ## Credits
 
-Original PowerBEye created by Assaf Shemesh and contributors.
+Original FabricBEyeAI created by Assaf Shemesh and contributors.
 Microsoft Fabric migration and advanced features added in 2024.

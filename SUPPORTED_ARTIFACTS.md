@@ -1,4 +1,4 @@
-# Microsoft Fabric Artifacts Supported in PowerBEye
+# Microsoft Fabric Artifacts Supported in FabricBEyeAI
 
 ## ✅ Fully Supported Artifacts (23 Types)
 

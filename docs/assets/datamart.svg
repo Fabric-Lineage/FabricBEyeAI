@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Datamart icon - purple data cube -->
+  <rect x="16" y="24" width="24" height="24" fill="#8764B8" opacity="0.8"/>
+  <!-- 3D effect -->
+  <path d="M40 24 L52 18 L52 42 L40 48 Z" fill="#8764B8" opacity="0.6"/>
+  <path d="M16 24 L28 18 L52 18 L40 24 Z" fill="#8764B8" opacity="0.9"/>
+  <!-- Grid lines -->
+  <line x1="16" y1="32" x2="40" y2="32" stroke="#FFF" stroke-width="1" opacity="0.4"/>
+  <line x1="16" y1="40" x2="40" y2="40" stroke="#FFF" stroke-width="1" opacity="0.4"/>
+  <line x1="24" y1="24" x2="24" y2="48" stroke="#FFF" stroke-width="1" opacity="0.4"/>
+  <line x1="32" y1="24" x2="32" y2="48" stroke="#FFF" stroke-width="1" opacity="0.4"/>
+</svg>

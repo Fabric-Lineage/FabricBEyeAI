@@ -1,4 +1,4 @@
-# Endorsement Badge Icons in PowerBEye
+# Endorsement Badge Icons in FabricBEyeAI
 
 ## Visual Indicators
 

@@ -1,4 +1,4 @@
-# PowerBEye Improvements - Fabric Visualization
+# FabricBEyeAI Improvements - Fabric Visualization
 
 ## Changes Implemented
 

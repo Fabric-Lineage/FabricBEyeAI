@@ -7,7 +7,7 @@
     "build": "ng build",
     "test": "ng test",
     "e2e": "ng e2e",
-    "docs": "ng build --configuration production --output-path=docs --base-href=https://powerbi-lineage.github.io/PowerBEye/ --deploy-url=https://powerbi-lineage.github.io/PowerBEye/",
+    "docs": "ng build --configuration production --output-path=docs --base-href=https://Fabric-Lineage.github.io/FabricBEyeAI/ --deploy-url=https://Fabric-Lineage.github.io/FabricBEyeAI/",
     "lint": "eslint src --ext .ts --fix"
   },
   "private": true,

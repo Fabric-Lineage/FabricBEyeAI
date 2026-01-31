@@ -1,5 +1,5 @@
 /**
- * HomeContainerComponent - Main visualization component for PowerBEye
+ * HomeContainerComponent - Main visualization component for FabricBEyeAI
  * 
  * This component provides a 3D graph visualization of Microsoft Fabric workspaces,
  * their artifacts (Lakehouses, Warehouses, Reports, Datasets, etc.), and lineage connections.
@@ -12,7 +12,7 @@
  * - Endorsement badges and sensitivity labels
  * - Support for 23+ Microsoft Fabric artifact types
  * 
- * @author PowerBEye Contributors
+ * @author FabricBEyeAI Contributors
  * @version 2.0.0 - Microsoft Fabric Migration
  */
 
@@ -1575,7 +1575,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     const imgData = renderer.domElement.toDataURL('image/png');
     
     const link = document.createElement('a');
-    link.download = `powerbeye-graph-${new Date().getTime()}.png`;
+    link.download = `fabricbeyeai-graph-${new Date().getTime()}.png`;
     link.href = imgData;
     link.click();
   }
@@ -1591,7 +1591,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     const url = URL.createObjectURL(blob);
     
     const link = document.createElement('a');
-    link.download = `powerbeye-graph-${new Date().getTime()}.json`;
+    link.download = `fabricbeyeai-graph-${new Date().getTime()}.json`;
     link.href = url;
     link.click();
     

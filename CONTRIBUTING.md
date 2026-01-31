@@ -1,6 +1,6 @@
-# Contributing to PowerBEye
+# Contributing to FabricBEyeAI
 
-Thank you for your interest in contributing to PowerBEye! This guide will help you understand our development workflow and coding standards.
+Thank you for your interest in contributing to FabricBEyeAI! This guide will help you understand our development workflow and coding standards.
 
 ## Table of Contents
 - [Getting Started](#getting-started)
@@ -21,8 +21,8 @@ Thank you for your interest in contributing to PowerBEye! This guide will help y
 ### Setup
 ```bash
 # Clone repository
-git clone https://github.com/[org]/PowerBEye.git
-cd PowerBEye
+git clone https://github.com/Fabric-Lineage/FabricBEyeAI.git
+cd FabricBEyeAI
 
 # Install dependencies
 npm install
@@ -589,8 +589,8 @@ private calculateDomainRadius(nodes: Node[], center: Vector3): number {
 
 ## Getting Help
 
-- **Issues**: Check [GitHub Issues](https://github.com/[org]/PowerBEye/issues)
-- **Discussions**: Use [GitHub Discussions](https://github.com/[org]/PowerBEye/discussions)
+- **Issues**: Check [GitHub Issues](https://github.com/Fabric-Lineage/FabricBEyeAI/issues)
+- **Discussions**: Use [GitHub Discussions](https://github.com/Fabric-Lineage/FabricBEyeAI/discussions)
 - **Documentation**: Read `README_DEVELOPERS.md`
 - **Code Examples**: Check existing components for patterns
 
@@ -603,6 +603,6 @@ private calculateDomainRadius(nodes: Node[], center: Vector3): number {
 
 ---
 
-**Thank you for contributing to PowerBEye!** 🎉
+**Thank you for contributing to FabricBEyeAI!** 🎉
 
 Your contributions help make Microsoft Fabric visualization better for everyone.

@@ -7,7 +7,7 @@ import { LoginDialogComponent } from './../login-dialog/login-dialog.component';
 const Login: string = 'Login';
 const UpdateToken: string = 'Update Token';
 const Welcome: string = 'Welcome';
-const homeUrl = 'https://powerbi-lineage.github.io/PowerBEye';
+const homeUrl = 'https://Fabric-Lineage.github.io/FabricBEyeAI';
 
 @Component({
   selector: 'app-bar',

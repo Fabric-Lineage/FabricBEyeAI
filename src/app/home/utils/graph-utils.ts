@@ -1,5 +1,5 @@
 /**
- * Graph Utilities for PowerBEye
+ * Graph Utilities for FabricBEyeAI
  * 
  * Utility functions for 3D graph visualization, separated for reusability and testing
  */
