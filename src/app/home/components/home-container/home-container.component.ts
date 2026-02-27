@@ -185,6 +185,10 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   public showSidePanel: boolean = false;
   public sidePanelNode: any = null;
 
+  /** Impact analysis state */
+  public impactNodes: Set<string> = new Set();
+  public impactAnalysisActive: boolean = false;
+
   /** Get count of unassigned workspaces */
   public get unassignedCount (): number {
     return this.nodes.filter(n =>
@@ -1777,6 +1781,66 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   public getWorkspaceArtifactCount (): number {
     if (!this.sidePanelNode) return 0;
     return this.nodes.filter(n => n.workspaceId === this.sidePanelNode.id && n.type !== NodeType.Workspace).length;
+  }
+
+  /**
+   * Impact Analysis: traces all downstream dependents from a node
+   * Walks the lineage graph using BFS to find everything affected
+   */
+  public runImpactAnalysis (): void {
+    if (!this.sidePanelNode) return;
+
+    this.impactNodes.clear();
+    this.impactAnalysisActive = true;
+
+    // BFS from selected node through all downstream links
+    const queue: string[] = [this.sidePanelNode.id];
+    const visited = new Set<string>();
+
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      if (visited.has(currentId)) continue;
+      visited.add(currentId);
+      this.impactNodes.add(currentId);
+
+      // Find all nodes that depend on current (current is their source/upstream)
+      for (const link of this.links) {
+        const sourceId = typeof (link as any).source === 'string' ? (link as any).source : (link as any).source?.id;
+        const targetId = typeof (link as any).target === 'string' ? (link as any).target : (link as any).target?.id;
+
+        if (sourceId === currentId && !visited.has(targetId)) {
+          queue.push(targetId);
+        }
+      }
+    }
+
+    // Remove the source node itself from count
+    this.impactNodes.delete(this.sidePanelNode.id);
+
+    // Apply visual highlighting
+    if (this.graphInstance) {
+      this.graphInstance
+        .nodeOpacity((node: any) => {
+          return this.impactNodes.has(node.id) || node.id === this.sidePanelNode.id ? 1 : 0.1;
+        })
+        .linkOpacity((link: any) => {
+          const sourceId = typeof link.source === 'string' ? link.source : link.source?.id;
+          const targetId = typeof link.target === 'string' ? link.target : link.target?.id;
+          return (this.impactNodes.has(sourceId) || sourceId === this.sidePanelNode.id) &&
+                 (this.impactNodes.has(targetId) || targetId === this.sidePanelNode.id) ? 1 : 0.03;
+        });
+    }
+  }
+
+  /** Clear impact analysis highlighting */
+  public clearImpactAnalysis (): void {
+    this.impactNodes.clear();
+    this.impactAnalysisActive = false;
+    if (this.graphInstance) {
+      this.graphInstance
+        .nodeOpacity(1)
+        .linkOpacity(0.6);
+    }
   }
 
   /**

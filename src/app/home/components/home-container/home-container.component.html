@@ -352,6 +352,17 @@
             {{ node.name }}
           </div>
         </div>
+
+        <!-- Impact Analysis -->
+        <div class="impact-section">
+          <button class="impact-btn" *ngIf="!impactAnalysisActive" (click)="runImpactAnalysis()">
+            💥 Impact Analysis
+          </button>
+          <div class="impact-result" *ngIf="impactAnalysisActive">
+            <span class="impact-count">{{ impactNodes.size }} affected items</span>
+            <button class="impact-clear" (click)="clearImpactAnalysis()">Clear</button>
+          </div>
+        </div>
       </div>
     </div>
     
