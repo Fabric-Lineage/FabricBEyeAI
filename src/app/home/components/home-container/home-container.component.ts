@@ -1535,6 +1535,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         return this.getNodeColor(node.type as NodeType);
       })
       .linkColor((link: any) => {
+        const opacityMul = this.linkOpacity / 100;
         if (this.highlightLinks.size > 0) {
           if (this.highlightLinks.has(link)) {
             if (link.type === LinkType.CrossWorkspace) return '#60CDFF';
@@ -1543,18 +1544,18 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           return 'rgba(255,255,255,0.02)';
         }
         // Cross-workspace lineage: bright cyan — the hero connection
-        if (link.type === LinkType.CrossWorkspace) return 'rgba(96,205,255,0.85)';
-        // Contains: domain-colored — VISIBLE, not faint
+        if (link.type === LinkType.CrossWorkspace) return `rgba(96,205,255,${0.85 * opacityMul})`;
+        // Contains: domain-colored — VISIBLE
         if (link.type === LinkType.Contains) {
           const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source;
           const sourceNode = this.nodeMap.get(sourceId);
           if (sourceNode?.metadata?.domainId) {
-            return this.getDomainColorRGBA(sourceNode.metadata.domainId, 0.7);
+            return this.getDomainColorRGBA(sourceNode.metadata.domainId, 0.7 * opacityMul);
           }
-          return 'rgba(255,255,255,0.4)';
+          return `rgba(255,255,255,${0.4 * opacityMul})`;
         }
-        // Artifact-to-artifact lineage: warm white — clearly visible
-        return 'rgba(220,220,200,0.6)';
+        // Artifact-to-artifact lineage: warm white
+        return `rgba(220,220,200,${0.6 * opacityMul})`;
       })
       .linkWidth((link: any) => {
         if (link.type === LinkType.CrossWorkspace) return 2.5;
@@ -1594,6 +1595,37 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     this.graphInstance
       .nodeColor(this.graphInstance.nodeColor())
       .linkColor(this.graphInstance.linkColor());
+  }
+
+  /** Apply the default link color + width styling (shared between init and toggle reset) */
+  private applyDefaultLinkStyle (): void {
+    if (!this.graphInstance) return;
+    this.graphInstance
+      .linkColor((link: any) => {
+        const opacityMul = this.linkOpacity / 100;
+        if (this.highlightLinks.size > 0) {
+          if (this.highlightLinks.has(link)) {
+            if (link.type === LinkType.CrossWorkspace) return '#60CDFF';
+            return '#ffffff';
+          }
+          return 'rgba(255,255,255,0.02)';
+        }
+        if (link.type === LinkType.CrossWorkspace) return `rgba(96,205,255,${0.85 * opacityMul})`;
+        if (link.type === LinkType.Contains) {
+          const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source;
+          const sourceNode = this.nodeMap.get(sourceId);
+          if (sourceNode?.metadata?.domainId) {
+            return this.getDomainColorRGBA(sourceNode.metadata.domainId, 0.7 * opacityMul);
+          }
+          return `rgba(255,255,255,${0.4 * opacityMul})`;
+        }
+        return `rgba(220,220,200,${0.6 * opacityMul})`;
+      })
+      .linkWidth((link: any) => {
+        if (link.type === LinkType.CrossWorkspace) return 2.5;
+        if (link.type === LinkType.Contains) return 1.5;
+        return 1.2;
+      });
   }
 
   public zoomToFit (): void {
@@ -2113,35 +2145,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     } else {
       this.graphInstance
         .nodeOpacity(1)
-        .linkOpacity(1)
-        .linkColor(this.graphInstance.linkColor())
-        .linkWidth(this.graphInstance.linkWidth());
-      // Re-apply normal link colors
-      this.graphInstance
-        .linkColor((link: any) => {
-          if (this.highlightLinks.size > 0) {
-            if (this.highlightLinks.has(link)) {
-              if (link.type === LinkType.CrossWorkspace) return '#60CDFF';
-              return '#ffffff';
-            }
-            return 'rgba(255,255,255,0.02)';
-          }
-          if (link.type === LinkType.CrossWorkspace) return 'rgba(96,205,255,0.85)';
-          if (link.type === LinkType.Contains) {
-            const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source;
-            const sourceNode = this.nodeMap.get(sourceId);
-            if (sourceNode?.metadata?.domainId) {
-              return this.getDomainColorRGBA(sourceNode.metadata.domainId, 0.7);
-            }
-            return 'rgba(255,255,255,0.4)';
-          }
-          return 'rgba(220,220,200,0.6)';
-        })
-        .linkWidth((link: any) => {
-          if (link.type === LinkType.CrossWorkspace) return 2.5;
-          if (link.type === LinkType.Contains) return 1.5;
-          return 1.2;
-        });
+        .linkOpacity(1);
+      // Re-apply normal link colors using shared method
+      this.applyDefaultLinkStyle();
     }
   }
 
@@ -2606,7 +2612,8 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
 
   public updateLinkOpacity (): void {
     if (!this.graphInstance) return;
-    this.graphInstance.linkOpacity(this.linkOpacity / 100);
+    // Re-trigger linkColor which uses rgba with opacity derived from the slider
+    this.graphInstance.linkColor(this.graphInstance.linkColor());
   }
 
   public resetFilters (): void {

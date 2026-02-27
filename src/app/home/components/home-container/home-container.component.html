@@ -106,7 +106,7 @@
       </div>
       <div class="legend-section-title">Nodes</div>
       <div class="legend-item">
-        <span class="legend-dot" style="background: linear-gradient(135deg, #3B82F6, #10B981, #F59E0B); border-radius: 50%;"></span>
+        <span class="legend-dot" style="background: linear-gradient(135deg, #4A90E2, #2ECC71, #F1C40F, #E74C3C); border-radius: 50%;"></span>
         <span class="legend-label">Workspace (by domain)</span>
       </div>
       <div class="legend-item" *ngFor="let entry of getActiveNodeTypes()">
@@ -120,8 +120,12 @@
         <span class="legend-label">Cross-workspace flow</span>
       </div>
       <div class="legend-item">
-        <span class="legend-dot" style="background: rgba(255,255,255,0.35);"></span>
+        <span class="legend-dot" style="background: rgba(220,220,200,0.6);"></span>
         <span class="legend-label">Contains (domain colored)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot" style="background: rgba(220,220,200,0.6);"></span>
+        <span class="legend-label">Artifact lineage</span>
       </div>
     </div>
 
