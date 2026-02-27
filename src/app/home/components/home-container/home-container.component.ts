@@ -1564,7 +1564,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     const linkForce = graph.d3Force('link');
     if (linkForce) {
       linkForce.distance((link: any) => {
-        if (link.type === LinkType.CrossWorkspace) return 80;
+        if (link.type === LinkType.CrossWorkspace) return 120;
         if (link.type === LinkType.Contains) return 20;
         return 35; // artifact lineage
       });
@@ -2606,7 +2606,16 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       .nodeVisibility((node: any) => {
         // Handle workspace nodes
         if (node.type === NodeType.Workspace) {
-          return this.isWorkspaceVisible(node);
+          if (!this.isWorkspaceVisible(node)) return false;
+          // Search filter for workspaces
+          if (this.searchTerm) {
+            const searchLower = this.searchTerm.toLowerCase();
+            const nameMatch = node.name.toLowerCase().includes(searchLower);
+            const typeMatch = 'workspace'.includes(searchLower);
+            const domainMatch = (node.metadata?.domainName || '').toLowerCase().includes(searchLower);
+            return nameMatch || typeMatch || domainMatch;
+          }
+          return true;
         }
 
         // Artifact type filters
@@ -2779,8 +2788,8 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     const n = domainIds.length;
     if (n === 0) return;
 
-    // Radius scales with domain count — compact but separated
-    const radius = 60 + n * 18;
+    // More space between domain clusters
+    const radius = 120 + n * 35;
 
     // Fibonacci sphere: evenly distribute N points on a sphere
     const goldenAngle = Math.PI * (3 - Math.sqrt(5));
@@ -2797,8 +2806,8 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   }
 
   private createDomainClusterForce (): any {
-    const anchorStrength = 0.4; // Pull workspaces toward domain anchor
-    const artifactStrength = 0.6; // Pull artifacts toward parent workspace
+    const anchorStrength = 0.55; // Strong pull — keep workspaces tight within domain
+    const artifactStrength = 0.65; // Artifacts stay close to workspace
 
     return (alpha: number) => {
       // Build workspace position lookup for artifact attraction
