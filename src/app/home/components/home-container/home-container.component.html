@@ -58,6 +58,12 @@
         <span>🏅</span> Endorsements
       </button>
 
+      <button class="control-btn" (click)="toggleUnassignedOnly()" 
+              [class.active]="showUnassignedOnly" title="Show workspaces without a domain">
+        <span>⚠️</span> Unassigned
+        <span class="badge warning" *ngIf="unassignedCount > 0">{{ unassignedCount }}</span>
+      </button>
+
       <div class="toolbar-divider"></div>
 
       <!-- Tools -->
