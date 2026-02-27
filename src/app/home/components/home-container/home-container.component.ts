@@ -1206,14 +1206,14 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       .height(window.innerHeight)
       .backgroundColor('#1b1a19')
       .enableNodeDrag(false)
-      .nodeRelSize(8)
+      .nodeRelSize(6)
       // Pre-compute layout so the graph appears settled (critical for big tenants)
       .warmupTicks(visibleNodes.length > 200 ? 100 : 50)
       .cooldownTicks(visibleNodes.length > 200 ? 200 : 300)
       .d3AlphaDecay(0.05) // Fast settling — stops oscillation quickly
       .d3VelocityDecay(0.6) // High friction to prevent shaking
       .nodeVal((node: any) => {
-        return node.type === NodeType.Workspace ? 15 : 4;
+        return node.type === NodeType.Workspace ? 12 : 3;
       })
       .d3Force('domainCluster', this.createDomainClusterForce())
       .linkOpacity(1.0) // Full opacity - we control it in linkColor
@@ -1556,6 +1556,16 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       .onBackgroundRightClick(() => {
         this.closeContextMenu();
       });
+
+    // Configure link distance — Contains short (tight clusters), CrossWorkspace long (spread domains)
+    const linkForce = graph.d3Force('link');
+    if (linkForce) {
+      linkForce.distance((link: any) => {
+        if (link.type === LinkType.CrossWorkspace) return 120;
+        if (link.type === LinkType.Contains) return 25;
+        return 40; // artifact lineage
+      });
+    }
 
     // Zoom to fit once after initial layout settles
     let initialZoomDone = false;
@@ -2752,7 +2762,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   private createDomainClusterForce (): any {
     const domainStrength = 0.3;
     const artifactStrength = 0.6;
-    const domainRepulsion = 0.8; // Push domains apart for big tenants
+    const domainRepulsion = 0.9;
 
     return (alpha: number) => {
       // Phase 1: Calculate domain centers from workspace positions
@@ -2793,7 +2803,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           const dy = a.y - b.y;
           const dz = a.z - b.z;
           const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-          const minDist = 150; // Minimum separation between domains
+          const minDist = 200; // Moderate separation between domains
           if (dist < minDist) {
             const force = (minDist - dist) / dist * domainRepulsion;
             const fa = domainForces.get(domainIds[i])!;
