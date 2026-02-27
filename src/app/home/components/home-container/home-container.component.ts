@@ -1239,18 +1239,17 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       // Pre-compute layout so the graph appears settled (critical for big tenants)
       .warmupTicks(visibleNodes.length > 200 ? 100 : 50)
       .cooldownTicks(visibleNodes.length > 200 ? 200 : 300)
-      .d3AlphaDecay(0.03) // Slightly faster settling than default 0.0228
-      .d3VelocityDecay(0.5) // More friction to prevent oscillation
+      .d3AlphaDecay(0.05) // Fast settling — stops oscillation quickly
+      .d3VelocityDecay(0.6) // High friction to prevent shaking
       .nodeVal((node: any) => {
         return node.type === NodeType.Workspace ? 15 : 4;
       })
       .d3Force('domainCluster', this.createDomainClusterForce())
       .linkOpacity(1.0) // Full opacity - we control it in linkColor
       .linkCurvature((link: any) => {
-        // Slight curve for Contains links to separate from straight cross-workspace lines
         return link.type === LinkType.Contains ? 0.15 : 0;
       })
-      .linkCurveRotation((link: any) => Math.random() * Math.PI)  // Randomize curve plane
+      .linkCurveRotation(0) // Fixed rotation — no random jitter
       // Directional arrows with elegant styling
       .linkDirectionalArrowLength((link: any) => {
         return link.type === LinkType.CrossWorkspace ? 4 : 0;
