@@ -296,3 +296,14 @@ export interface Domain {
   center?: { x: number; y: number; z: number };
   radius?: number;
 }
+
+/**
+ * Fabric REST API domain response
+ * Based on: https://learn.microsoft.com/en-us/rest/api/fabric/admin/domains/list-domains
+ */
+export interface FabricDomainResponse {
+  id: string;
+  displayName: string;
+  description?: string;
+  parentDomainId?: string;
+}

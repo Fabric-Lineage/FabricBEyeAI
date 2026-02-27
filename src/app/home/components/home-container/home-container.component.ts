@@ -315,6 +315,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     this.isScanTenantInProgress = true;
 
     try {
+      // Fetch domains from Fabric Admin API (parallel with workspace scan)
+      this.fetchDomains();
+
       const resultObservable = await this.proxy.getModifedWorkspaces();
       const result = await resultObservable.toPromise();
       const workspaceIds = result.slice(0, MAX_PARALLEL_API_CALLS * 100).map(workspace => workspace.Id);
@@ -436,6 +439,31 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     this.isDemoMode = true; // Enable demo mode - skip all API calls
     this.domains = MOCK_DOMAINS;
     this.loadLineage(MOCK_SCANNER_RESPONSE.workspaces);
+  }
+
+  /**
+   * Fetches domains from the Fabric Admin API
+   * In real mode: calls GET /v1/admin/domains and maps response to Domain[]
+   * Silently falls back to empty domains on error (graph still works without domains)
+   */
+  private fetchDomains (): void {
+    if (this.isDemoMode) return;
+    this.proxy.getDomains().pipe(take(1)).subscribe({
+      next: (response: any) => {
+        const domainList = response?.domains || response?.value || (Array.isArray(response) ? response : []);
+        this.domains = domainList.map((d: any) => ({
+          id: d.id,
+          name: d.displayName || d.name,
+          description: d.description,
+          parentDomainId: d.parentDomainId,
+          workspaceIds: []
+        }));
+        console.log(`✓ Loaded ${this.domains.length} domains from Fabric API`);
+      },
+      error: (err: any) => {
+        console.warn('Could not fetch domains from Fabric API:', err.status);
+      }
+    });
   }
 
   // =================================================================

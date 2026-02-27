@@ -101,6 +101,24 @@ export class HomeProxy {
     return forkJoin(observables.length > 0 ? observables : [of(null)]);
   }
 
+  /**
+   * Get all domains from Fabric Admin API
+   * Based on: https://learn.microsoft.com/en-us/rest/api/fabric/admin/domains/list-domains
+   */
+  public getDomains (): Observable<any> {
+    const apiUrl: string = this.getEnvironment().apiUrl;
+    return this.httpService.get(
+      `https://${apiUrl}/v1/admin/domains`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          authorization: 'Bearer ' + this.token,
+          'X-POWERBI-ADMIN-CLIENT-NAME': 'FabricBEyeAI'
+        }
+      }
+    );
+  }
+
   public getEnvironment (): { apiUrl: string, url: string } {
     const env: string = this.route.snapshot.queryParams.env;
     const envLowerCase: string = env ? env.toLocaleLowerCase() : env;
