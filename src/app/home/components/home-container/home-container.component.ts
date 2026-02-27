@@ -157,6 +157,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   /** Whether the endorsement stats panel is visible */
   public showEndorsementPanel: boolean = false;
 
+  /** Whether the sensitivity compliance view is active */
+  public showSensitivityCompliance: boolean = false;
+
   /** Set of hidden domain IDs */
   public hiddenDomains: Set<string> = new Set();
 
@@ -1878,6 +1881,37 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     }
 
     return Array.from(domainStats.values()).sort((a, b) => b.total - a.total);
+  }
+
+  /** Get sensitivity label compliance stats */
+  public getSensitivityStats (): { labeled: number; unlabeled: number; total: number; labeledPct: number } {
+    const artifacts = this.nodes.filter(n => n.type !== NodeType.Workspace);
+    const labeled = artifacts.filter(n => n.metadata?.sensitivityLabel).length;
+    const unlabeled = artifacts.length - labeled;
+    const total = artifacts.length || 1;
+    return {
+      labeled, unlabeled, total: artifacts.length,
+      labeledPct: Math.round((labeled / total) * 100),
+    };
+  }
+
+  /** Toggle sensitivity compliance view — highlights unlabeled artifacts */
+  public toggleSensitivityCompliance (): void {
+    this.showSensitivityCompliance = !this.showSensitivityCompliance;
+    if (!this.graphInstance) return;
+
+    if (this.showSensitivityCompliance) {
+      this.graphInstance
+        .nodeOpacity((node: any) => {
+          if (node.type === NodeType.Workspace) return 0.4;
+          return node.metadata?.sensitivityLabel ? 0.15 : 1;
+        })
+        .linkOpacity(0.05);
+    } else {
+      this.graphInstance
+        .nodeOpacity(1)
+        .linkOpacity(0.6);
+    }
   }
 
   /**

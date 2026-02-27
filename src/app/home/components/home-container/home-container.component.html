@@ -75,6 +75,14 @@
       <button class="control-btn" (click)="showEndorsementPanel = !showEndorsementPanel" [class.active]="showEndorsementPanel" title="Endorsement stats">
         <span>🏅</span> Trust
       </button>
+
+      <button class="control-btn" (click)="toggleSensitivityCompliance()" 
+              [class.active]="showSensitivityCompliance" title="Show unlabeled artifacts">
+        <span>🛡️</span> Compliance
+        <span class="badge warning" *ngIf="getSensitivityStats().unlabeled > 0">
+          {{ getSensitivityStats().unlabeled }}
+        </span>
+      </button>
       
       <button class="control-btn" (click)="exportToPNG()" title="Export as PNG">
         <span>📷</span>
