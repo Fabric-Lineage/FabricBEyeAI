@@ -2042,20 +2042,30 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     if (!this.graphInstance) return;
 
     const searchLower = this.searchTerm.toLowerCase();
+    const matchIds = new Set<string>();
 
+    if (searchLower) {
+      // Find matching nodes
+      for (const node of this.nodes) {
+        if (node.name.toLowerCase().includes(searchLower) ||
+            NodeType[node.type].toLowerCase().includes(searchLower) ||
+            (node.metadata?.domainName || '').toLowerCase().includes(searchLower)) {
+          matchIds.add(node.id);
+        }
+      }
+    }
+
+    // Use nodeColor to dim non-matching nodes instead of hiding them
     this.graphInstance
-      .nodeVisibility((node: any) => {
-        if (!searchLower) return true;
-        return node.name.toLowerCase().includes(searchLower) ||
-               node.workspaceId.toLowerCase().includes(searchLower) ||
-               NodeType[node.type].toLowerCase().includes(searchLower);
+      .nodeOpacity((node: any) => {
+        if (!searchLower) return 1;
+        return matchIds.has(node.id) ? 1 : 0.08;
       })
-      .linkVisibility((link: any) => {
-        if (!searchLower) return true;
-        const sourceNode = this.nodes.find(n => n.id === link.source);
-        const targetNode = this.nodes.find(n => n.id === link.target);
-        return (sourceNode?.name.toLowerCase().includes(searchLower) || false) ||
-               (targetNode?.name.toLowerCase().includes(searchLower) || false);
+      .linkOpacity((link: any) => {
+        if (!searchLower) return 0.6;
+        const sourceId = typeof link.source === 'string' ? link.source : link.source?.id;
+        const targetId = typeof link.target === 'string' ? link.target : link.target?.id;
+        return (matchIds.has(sourceId) || matchIds.has(targetId)) ? 0.8 : 0.02;
       });
   }
 
