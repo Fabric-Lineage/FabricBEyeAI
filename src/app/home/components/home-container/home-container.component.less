@@ -1105,3 +1105,39 @@ kbd {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.6);
 }
+
+.context-menu {
+  position: fixed;
+  z-index: 9999;
+  background: #292827;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 4px 0;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  font-family: 'Segoe UI', sans-serif;
+
+  .context-menu-item {
+    padding: 8px 16px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    span:first-child {
+      font-size: 14px;
+      width: 20px;
+      text-align: center;
+    }
+  }
+
+  .context-menu-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 4px 0;
+  }
+}

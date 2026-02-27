@@ -191,6 +191,12 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   public showSidePanel: boolean = false;
   public sidePanelNode: any = null;
 
+  /** Context menu state */
+  public contextMenuVisible: boolean = false;
+  public contextMenuX: number = 0;
+  public contextMenuY: number = 0;
+  public contextMenuNode: any = null;
+
   /** Impact analysis state */
   public impactNodes: Set<string> = new Set();
   public impactAnalysisActive: boolean = false;
@@ -1545,6 +1551,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       })
       .onBackgroundClick(() => {
         // Clear all highlights and close panels
+        this.closeContextMenu();
         if (this.focusedNode) {
           this.focusedNode = null;
           this.highlightNodes.clear();
@@ -1554,6 +1561,16 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         if (this.showSidePanel) {
           this.closeSidePanel();
         }
+      })
+      .onNodeRightClick((node: any, event: MouseEvent) => {
+        event.preventDefault();
+        this.contextMenuNode = node;
+        this.contextMenuX = event.clientX;
+        this.contextMenuY = event.clientY;
+        this.contextMenuVisible = true;
+      })
+      .onBackgroundRightClick(() => {
+        this.closeContextMenu();
       });
 
     // Zoom to fit once after initial layout settles
@@ -1827,6 +1844,58 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     this.assignmentSearchTerm = '';
   }
 
+  // ========== CONTEXT MENU ==========
+
+  public closeContextMenu (): void {
+    this.contextMenuVisible = false;
+    this.contextMenuNode = null;
+  }
+
+  public contextMenuAction (action: string): void {
+    const node = this.contextMenuNode;
+    this.closeContextMenu();
+    if (!node) return;
+
+    switch (action) {
+      case 'impact':
+        this.runImpactAnalysis(node);
+        break;
+      case 'isolate':
+        if (node.metadata?.domainId) {
+          this.isolatedDomain = node.metadata.domainId;
+          this.isolateMode = true;
+          this.zoomToDomain(node.metadata.domainId);
+          this.applyFilters();
+        }
+        break;
+      case 'expand':
+        this.focusedNode = node;
+        this.highlightNodes.clear();
+        this.highlightLinks.clear();
+        this.highlightNodes.add(node);
+        this.links.forEach(link => {
+          const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source;
+          const targetId = typeof link.target === 'object' ? (link.target as any).id : link.target;
+          if (sourceId === node.id || targetId === node.id) {
+            this.highlightLinks.add(link);
+            const connectedNode = this.nodes.find(n => n.id === (sourceId === node.id ? targetId : sourceId));
+            if (connectedNode) this.highlightNodes.add(connectedNode);
+          }
+        });
+        this.updateHighlight();
+        break;
+      case 'copyId':
+        navigator.clipboard.writeText(node.id);
+        break;
+      case 'copyName':
+        navigator.clipboard.writeText(node.name);
+        break;
+      case 'openFabric':
+        window.open(`https://app.fabric.microsoft.com/groups/${node.id}`, '_blank');
+        break;
+    }
+  }
+
   /**
    * Opens side panel with details for the selected node
    */
@@ -1980,14 +2049,15 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
    * Impact Analysis: traces all downstream dependents from a node
    * Walks the lineage graph using BFS to find everything affected
    */
-  public runImpactAnalysis (): void {
-    if (!this.sidePanelNode) return;
+  public runImpactAnalysis (fromNode?: any): void {
+    const node = fromNode || this.sidePanelNode;
+    if (!node) return;
 
     this.impactNodes.clear();
     this.impactAnalysisActive = true;
 
     // BFS from selected node through all downstream links
-    const queue: string[] = [this.sidePanelNode.id];
+    const queue: string[] = [node.id];
     const visited = new Set<string>();
 
     while (queue.length > 0) {

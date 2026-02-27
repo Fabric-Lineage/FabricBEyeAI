@@ -88,6 +88,32 @@
       Showing <strong>{{ unassignedCount }} unassigned workspace{{ unassignedCount !== 1 ? 's' : '' }}</strong> — assign them to domains via Filters
     </div>
 
+    <!-- Right-Click Context Menu -->
+    <div class="context-menu" *ngIf="contextMenuVisible" 
+         [style.left.px]="contextMenuX" [style.top.px]="contextMenuY"
+         (mouseleave)="closeContextMenu()">
+      <div class="context-menu-item" (click)="contextMenuAction('impact')">
+        <span>🔍</span> Impact Analysis
+      </div>
+      <div class="context-menu-item" (click)="contextMenuAction('isolate')" *ngIf="contextMenuNode?.type === 0">
+        <span>🎯</span> Isolate Domain
+      </div>
+      <div class="context-menu-item" (click)="contextMenuAction('expand')">
+        <span>🔗</span> Show Connections
+      </div>
+      <div class="context-menu-divider"></div>
+      <div class="context-menu-item" (click)="contextMenuAction('copyId')">
+        <span>📋</span> Copy ID
+      </div>
+      <div class="context-menu-item" (click)="contextMenuAction('copyName')">
+        <span>📋</span> Copy Name
+      </div>
+      <div class="context-menu-divider" *ngIf="contextMenuNode?.type === 0"></div>
+      <div class="context-menu-item" (click)="contextMenuAction('openFabric')" *ngIf="contextMenuNode?.type === 0">
+        <span>🌐</span> Open in Fabric Portal
+      </div>
+    </div>
+
     <!-- Legend Panel -->
     <div class="legend-panel" *ngIf="shouldShowGraph && showLegendPanel">
       <div class="legend-header">
