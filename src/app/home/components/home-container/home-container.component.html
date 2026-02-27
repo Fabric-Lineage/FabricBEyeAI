@@ -452,6 +452,17 @@
       </div>
     </div>
     
+    <!-- Status Bar -->
+    <div class="status-bar" *ngIf="shouldShowGraph">
+      <span>{{ getWorkspaceCount() }} workspaces</span>
+      <span class="status-dot">·</span>
+      <span>{{ getArtifactCount() }} artifacts</span>
+      <span class="status-dot">·</span>
+      <span>{{ getCrossWorkspaceLinkCount() }} cross-workspace flows</span>
+      <span class="status-dot">·</span>
+      <span>{{ getVisibleDomains().length }} domains</span>
+    </div>
+
     <div id="3d-graph"></div>
 </section>
 <input hidden type="file" #filesInput (change)="onFileAdded()" multiple>

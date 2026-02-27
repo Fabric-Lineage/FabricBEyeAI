@@ -1909,6 +1909,20 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     this.sidePanelNode = null;
   }
 
+  // ========== STATUS BAR HELPERS ==========
+
+  public getWorkspaceCount (): number {
+    return this.nodes.filter(n => n.type === NodeType.Workspace).length;
+  }
+
+  public getArtifactCount (): number {
+    return this.nodes.filter(n => n.type !== NodeType.Workspace).length;
+  }
+
+  public getCrossWorkspaceLinkCount (): number {
+    return this.links.filter(l => l.type === LinkType.CrossWorkspace).length;
+  }
+
   @HostListener('document:keydown', ['$event'])
   handleKeyboardShortcuts (event: KeyboardEvent): void {
     // Escape: close any open panel, clear highlights
