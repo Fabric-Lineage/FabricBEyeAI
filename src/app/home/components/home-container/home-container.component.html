@@ -36,28 +36,28 @@
       </button>
       
       <button class="control-btn" (click)="isolateMode = !isolateMode; updateIsolationMode()" 
-              [class.active]="isolateMode" title="Click workspace to isolate domain">
+              [class.active]="isolateMode" title="Click a workspace to isolate its domain">
         <span>🎯</span> Focus
       </button>
       
       <button class="control-btn" (click)="toggleLegendPanel()" [class.active]="showLegendPanel" title="Legend & domain navigator (L)">
-        <span>🗺️</span> Map
+        <span>🗺️</span> Legend
       </button>
 
       <div class="toolbar-divider"></div>
 
       <!-- Governance -->
       <button class="control-btn" (click)="toggleCrossWorkspaceView()"
-              [class.active]="crossWorkspaceViewActive" title="Cross-workspace data flow">
-        <span>🔗</span> Lineage
+              [class.active]="crossWorkspaceViewActive" title="Highlight cross-workspace data flows">
+        <span>🔗</span> Data Flow
       </button>
 
-      <button class="control-btn" (click)="showEndorsementPanel = !showEndorsementPanel" [class.active]="showEndorsementPanel" title="Endorsement coverage">
-        <span>🏅</span> Trust
+      <button class="control-btn" (click)="showEndorsementPanel = !showEndorsementPanel" [class.active]="showEndorsementPanel" title="Endorsement coverage across domains">
+        <span>🏅</span> Endorsements
       </button>
 
       <button class="control-btn" (click)="toggleSensitivityCompliance()" 
-              [class.active]="showSensitivityCompliance" title="Unlabeled artifacts">
+              [class.active]="showSensitivityCompliance" title="Artifacts missing sensitivity labels">
         <span>🛡️</span> Labels
         <span class="badge warning" *ngIf="getSensitivityStats().unlabeled > 0">
           {{ getSensitivityStats().unlabeled }}
@@ -67,7 +67,7 @@
       <div class="toolbar-divider"></div>
 
       <!-- Tools -->
-      <button class="control-btn" (click)="toggleFilterPanel()" title="Domain & artifact filters">
+      <button class="control-btn" (click)="toggleFilterPanel()" title="Filter by domain and artifact type">
         <span>🎛️</span> Filters
       </button>
 
@@ -82,16 +82,16 @@
     
     <!-- Focus Mode Instructions -->
     <div class="focus-instructions" *ngIf="shouldShowGraph && isolateMode && !isolatedDomain">
-      <span>🎯</span> Click any <strong>workspace</strong> (green badge) to isolate its domain
+      <span>🎯</span> Click any <strong>workspace</strong> to isolate its domain
     </div>
     
     <div class="focus-active" *ngIf="shouldShowGraph && isolatedDomain">
-      <span>✓</span> Showing: <strong>{{ getIsolatedDomainName() }}</strong> | Click workspace again to exit
+      Showing domain: <strong>{{ getIsolatedDomainName() }}</strong> — click workspace again to exit
     </div>
     
     <!-- Unassigned Mode Instructions -->
-    <div class="focus-instructions" style="background: #FF9800;" *ngIf="shouldShowGraph && showUnassignedOnly && !showAssignmentPanel">
-      <span>🏷️</span> Showing <strong>{{ unassignedCount }} unassigned workspace{{ unassignedCount !== 1 ? 's' : '' }}</strong> (orange) - Click "Unassigned" button to manage
+    <div class="focus-instructions" *ngIf="shouldShowGraph && showUnassignedOnly && !showAssignmentPanel" style="background: rgba(184,134,74,0.9); border-color: rgba(184,134,74,0.6);">
+      Showing <strong>{{ unassignedCount }} unassigned workspace{{ unassignedCount !== 1 ? 's' : '' }}</strong> — assign them to domains via Filters
     </div>
 
     <!-- Legend Panel -->

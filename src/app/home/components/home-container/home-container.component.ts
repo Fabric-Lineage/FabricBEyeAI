@@ -1463,9 +1463,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         // Add domain name below workspace name
         if (node.metadata?.domainName) {
           const domainLabel = new SpriteText(node.metadata.domainName);
-          domainLabel.color = '#A0A0A0';
+          domainLabel.color = domainColor;
           domainLabel.textHeight = 2.5;
-          domainLabel.backgroundColor = 'rgba(0,0,0,0.6)';
+          domainLabel.backgroundColor = 'rgba(0,0,0,0.5)';
           domainLabel.padding = 2;
           domainLabel.borderRadius = 2;
           (domainLabel as any).position.set(0, -8, 0);
@@ -1522,22 +1522,29 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       .linkColor((link: any) => {
         if (this.highlightLinks.size > 0) {
           if (this.highlightLinks.has(link)) {
-            if (link.type === LinkType.CrossWorkspace) return COLOR_ARROW_CROSS_WS;
-            if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.6)';
-            return 'rgba(200,200,200,0.7)';
+            if (link.type === LinkType.CrossWorkspace) return '#60CDFF';
+            return '#ffffff';
           }
-          return 'rgba(100,100,100,0.05)';
+          return 'rgba(255,255,255,0.02)';
         }
-        // Cross-workspace: soft cyan data flow
-        if (link.type === LinkType.CrossWorkspace) return 'rgba(96,205,255,0.6)';
-        // Contains: subtle structural connections
-        if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.18)';
-        return 'rgba(150,150,150,0.15)';
+        // Cross-workspace lineage: cyan signal — the hero
+        if (link.type === LinkType.CrossWorkspace) return 'rgba(96,205,255,0.7)';
+        // Contains: domain-colored structural link
+        if (link.type === LinkType.Contains) {
+          const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source;
+          const sourceNode = this.nodes.find((n: any) => n.id === sourceId);
+          if (sourceNode?.metadata?.domainId) {
+            return this.getDomainColorRGBA(sourceNode.metadata.domainId, 0.45);
+          }
+          return 'rgba(255,255,255,0.3)';
+        }
+        // Other lineage
+        return 'rgba(180,180,180,0.35)';
       })
       .linkWidth((link: any) => {
         if (link.type === LinkType.CrossWorkspace) return 2;
-        if (link.type === LinkType.Contains) return 0.8;
-        return 0.4;
+        if (link.type === LinkType.Contains) return 1.2;
+        return 0.8;
       })
       .onBackgroundClick(() => {
         // Clear all highlights and close panels
@@ -1693,32 +1700,33 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   }
 
   private getDomainColor (domainId: string): number {
-    // Enterprise-grade muted palette — desaturated, professional tones
-    // These are hand-picked to be visually distinct but not garish
-    const ENTERPRISE_PALETTE = [
-      0x4A90B8, // Steel blue
-      0x6B8E7B, // Sage green
-      0x9B7DB8, // Soft purple
-      0xB8864A, // Warm bronze
-      0x7BA3A3, // Teal gray
-      0xA3697B, // Dusty rose
-      0x8B9E6B, // Olive
-      0x6B7FA3, // Slate blue
-      0xA38B6B, // Khaki
-      0x7B8BA3, // Cool gray-blue
-      0x8BA37B, // Muted green
-      0xA37B8B, // Mauve
-      0x6BA39B, // Sea foam
-      0x9B8B6B, // Sand
-      0x7B6BA3, // Lavender
-      0xA39B6B, // Olive gold
+    // 8 bold, maximally distinct colors — optimized for dark background 3D canvas
+    // Fewer colors = each domain is instantly recognizable
+    const DOMAIN_PALETTE = [
+      0x3B82F6, // Blue
+      0x10B981, // Emerald
+      0xF59E0B, // Amber
+      0xEF4444, // Red
+      0x8B5CF6, // Violet
+      0x06B6D4, // Cyan
+      0xF97316, // Orange
+      0xEC4899, // Pink
     ];
 
     let hash = 0;
     for (let i = 0; i < domainId.length; i++) {
       hash = domainId.charCodeAt(i) + ((hash << 5) - hash);
     }
-    return ENTERPRISE_PALETTE[Math.abs(hash) % ENTERPRISE_PALETTE.length];
+    return DOMAIN_PALETTE[Math.abs(hash) % DOMAIN_PALETTE.length];
+  }
+
+  /** Convert domain hex color to rgba string */
+  private getDomainColorRGBA (domainId: string, alpha: number): string {
+    const hex = this.getDomainColor(domainId);
+    const r = (hex >> 16) & 0xFF;
+    const g = (hex >> 8) & 0xFF;
+    const b = hex & 0xFF;
+    return `rgba(${r},${g},${b},${alpha})`;
   }
 
   public exportToPNG (): void {
@@ -2067,7 +2075,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         })
         .linkOpacity(1)
         .linkColor((link: any) => {
-          if ((link as any).type === LinkType.CrossWorkspace) return 'rgba(0,188,242,0.9)';
+          if ((link as any).type === LinkType.CrossWorkspace) return 'rgba(96,205,255,0.9)';
           return 'rgba(255,255,255,0.02)';
         })
         .linkWidth((link: any) => {
@@ -2085,20 +2093,26 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         .linkColor((link: any) => {
           if (this.highlightLinks.size > 0) {
             if (this.highlightLinks.has(link)) {
-              if (link.type === LinkType.CrossWorkspace) return COLOR_ARROW_CROSS_WS;
-              if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.6)';
-              return 'rgba(200,200,200,0.7)';
+              if (link.type === LinkType.CrossWorkspace) return '#60CDFF';
+              return '#ffffff';
             }
-            return 'rgba(100,100,100,0.05)';
+            return 'rgba(255,255,255,0.02)';
           }
-          if (link.type === LinkType.CrossWorkspace) return 'rgba(96,205,255,0.6)';
-          if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.18)';
-          return 'rgba(150,150,150,0.15)';
+          if (link.type === LinkType.CrossWorkspace) return 'rgba(96,205,255,0.7)';
+          if (link.type === LinkType.Contains) {
+            const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source;
+            const sourceNode = this.nodes.find((n: any) => n.id === sourceId);
+            if (sourceNode?.metadata?.domainId) {
+              return this.getDomainColorRGBA(sourceNode.metadata.domainId, 0.45);
+            }
+            return 'rgba(255,255,255,0.3)';
+          }
+          return 'rgba(180,180,180,0.35)';
         })
         .linkWidth((link: any) => {
           if (link.type === LinkType.CrossWorkspace) return 2;
-          if (link.type === LinkType.Contains) return 0.8;
-          return 0.4;
+          if (link.type === LinkType.Contains) return 1.2;
+          return 0.8;
         });
     }
   }

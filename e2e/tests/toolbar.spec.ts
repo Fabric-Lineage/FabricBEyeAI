@@ -29,9 +29,9 @@ test.describe('Toolbar', () => {
   test('should have core toolbar buttons', async ({ page }) => {
     await expect(page.locator('button.control-btn', { hasText: 'Fit' })).toBeVisible();
     await expect(page.locator('button.control-btn', { hasText: 'Focus' })).toBeVisible();
-    await expect(page.locator('button.control-btn', { hasText: 'Map' })).toBeVisible();
-    await expect(page.locator('button.control-btn', { hasText: 'Lineage' })).toBeVisible();
-    await expect(page.locator('button.control-btn', { hasText: 'Trust' })).toBeVisible();
+    await expect(page.locator('button.control-btn', { hasText: 'Legend' })).toBeVisible();
+    await expect(page.locator('button.control-btn', { hasText: 'Data Flow' })).toBeVisible();
+    await expect(page.locator('button.control-btn', { hasText: 'Endorsements' })).toBeVisible();
     await expect(page.locator('button.control-btn', { hasText: 'Labels' })).toBeVisible();
     await expect(page.locator('button.control-btn', { hasText: 'Filters' })).toBeVisible();
   });

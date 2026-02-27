@@ -21,8 +21,8 @@ test.describe('Graph Links', () => {
     await expect(focusBtn).toBeVisible();
   });
 
-  test('should show lineage view toggle', async ({ page }) => {
-    const lineageBtn = page.locator('button.control-btn', { hasText: 'Lineage' });
-    await expect(lineageBtn).toBeVisible();
+  test('should show data flow view toggle', async ({ page }) => {
+    const dataFlowBtn = page.locator('button.control-btn', { hasText: 'Data Flow' });
+    await expect(dataFlowBtn).toBeVisible();
   });
 });
