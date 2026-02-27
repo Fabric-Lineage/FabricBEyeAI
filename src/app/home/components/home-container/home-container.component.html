@@ -56,14 +56,6 @@
         <span>🏅</span> Endorsements
       </button>
 
-      <button class="control-btn" (click)="toggleSensitivityCompliance()" 
-              [class.active]="showSensitivityCompliance" title="Artifacts missing sensitivity labels">
-        <span>🛡️</span> Labels
-        <span class="badge warning" *ngIf="getSensitivityStats().unlabeled > 0">
-          {{ getSensitivityStats().unlabeled }}
-        </span>
-      </button>
-
       <div class="toolbar-divider"></div>
 
       <!-- Tools -->

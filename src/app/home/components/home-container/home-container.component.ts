@@ -1533,24 +1533,24 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           }
           return 'rgba(255,255,255,0.02)';
         }
-        // Cross-workspace lineage: cyan signal — the hero
-        if (link.type === LinkType.CrossWorkspace) return 'rgba(96,205,255,0.7)';
-        // Contains: domain-colored structural link
+        // Cross-workspace lineage: bright cyan — the hero connection
+        if (link.type === LinkType.CrossWorkspace) return 'rgba(96,205,255,0.85)';
+        // Contains: domain-colored — VISIBLE, not faint
         if (link.type === LinkType.Contains) {
           const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source;
           const sourceNode = this.nodeMap.get(sourceId);
           if (sourceNode?.metadata?.domainId) {
-            return this.getDomainColorRGBA(sourceNode.metadata.domainId, 0.45);
+            return this.getDomainColorRGBA(sourceNode.metadata.domainId, 0.7);
           }
-          return 'rgba(255,255,255,0.3)';
+          return 'rgba(255,255,255,0.4)';
         }
-        // Other lineage
-        return 'rgba(180,180,180,0.35)';
+        // Artifact-to-artifact lineage: warm white — clearly visible
+        return 'rgba(220,220,200,0.6)';
       })
       .linkWidth((link: any) => {
-        if (link.type === LinkType.CrossWorkspace) return 2;
-        if (link.type === LinkType.Contains) return 1.2;
-        return 0.8;
+        if (link.type === LinkType.CrossWorkspace) return 2.5;
+        if (link.type === LinkType.Contains) return 1.5;
+        return 1.2;
       })
       .onBackgroundClick(() => {
         // Clear all highlights and close panels
@@ -1705,25 +1705,38 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     }, 3000); // Wait 3 seconds for layout to settle
   }
 
+  // Sequential domain color assignment — guarantees every domain gets a unique color
+  private domainColorMap: Map<string, number> = new Map();
+  private domainColorIndex: number = 0;
+
   private getDomainColor (domainId: string): number {
-    // 8 bold, maximally distinct colors — optimized for dark background 3D canvas
-    // Fewer colors = each domain is instantly recognizable
+    // 16 maximally distinct colors — perceptually separated for dark backgrounds
+    // Covers: blue, green, gold, red, violet, teal, orange, magenta,
+    //         sky, lime, coral, indigo, mint, rose, slate-blue, amber
     const DOMAIN_PALETTE = [
-      0x3B82F6, // Blue
-      0x10B981, // Emerald
-      0xF59E0B, // Amber
-      0xEF4444, // Red
-      0x8B5CF6, // Violet
-      0x06B6D4, // Cyan
-      0xF97316, // Orange
-      0xEC4899, // Pink
+      0x4A90E2, // Steel Blue
+      0x2ECC71, // Emerald Green
+      0xF1C40F, // Sunflower Gold
+      0xE74C3C, // Crimson Red
+      0x9B59B6, // Amethyst Purple
+      0x1ABC9C, // Turquoise
+      0xE67E22, // Carrot Orange
+      0xE91E90, // Hot Pink
+      0x3498DB, // Sky Blue
+      0x27AE60, // Nephritis Green
+      0xFF6B6B, // Coral
+      0x6C5CE7, // Indigo
+      0x00CEC9, // Mint
+      0xFD79A8, // Rose
+      0x74B9FF, // Light Royal Blue
+      0xFDBB2D, // Amber
     ];
 
-    let hash = 0;
-    for (let i = 0; i < domainId.length; i++) {
-      hash = domainId.charCodeAt(i) + ((hash << 5) - hash);
+    if (!this.domainColorMap.has(domainId)) {
+      this.domainColorMap.set(domainId, DOMAIN_PALETTE[this.domainColorIndex % DOMAIN_PALETTE.length]);
+      this.domainColorIndex++;
     }
-    return DOMAIN_PALETTE[Math.abs(hash) % DOMAIN_PALETTE.length];
+    return this.domainColorMap.get(domainId)!;
   }
 
   /** Convert domain hex color to rgba string */
@@ -2104,21 +2117,21 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
             }
             return 'rgba(255,255,255,0.02)';
           }
-          if (link.type === LinkType.CrossWorkspace) return 'rgba(96,205,255,0.7)';
+          if (link.type === LinkType.CrossWorkspace) return 'rgba(96,205,255,0.85)';
           if (link.type === LinkType.Contains) {
             const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source;
             const sourceNode = this.nodeMap.get(sourceId);
             if (sourceNode?.metadata?.domainId) {
-              return this.getDomainColorRGBA(sourceNode.metadata.domainId, 0.45);
+              return this.getDomainColorRGBA(sourceNode.metadata.domainId, 0.7);
             }
-            return 'rgba(255,255,255,0.3)';
+            return 'rgba(255,255,255,0.4)';
           }
-          return 'rgba(180,180,180,0.35)';
+          return 'rgba(220,220,200,0.6)';
         })
         .linkWidth((link: any) => {
-          if (link.type === LinkType.CrossWorkspace) return 2;
-          if (link.type === LinkType.Contains) return 1.2;
-          return 0.8;
+          if (link.type === LinkType.CrossWorkspace) return 2.5;
+          if (link.type === LinkType.Contains) return 1.5;
+          return 1.2;
         });
     }
   }
