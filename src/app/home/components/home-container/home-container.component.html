@@ -71,6 +71,10 @@
       <button class="control-btn" (click)="toggleLegendPanel()" [class.active]="showLegendPanel" title="Show/hide legend">
         <span>🗺️</span> Legend
       </button>
+
+      <button class="control-btn" (click)="showEndorsementPanel = !showEndorsementPanel" [class.active]="showEndorsementPanel" title="Endorsement stats">
+        <span>🏅</span> Trust
+      </button>
       
       <button class="control-btn" (click)="exportToPNG()" title="Export as PNG">
         <span>📷</span>
@@ -105,6 +109,43 @@
         <span class="legend-dot" [style.background]="entry.color"></span>
         <span class="legend-label">{{ entry.label }}</span>
         <span class="legend-count">{{ entry.count }}</span>
+      </div>
+    </div>
+
+    <!-- Endorsement Stats Panel -->
+    <div class="endorsement-panel" *ngIf="shouldShowGraph && showEndorsementPanel">
+      <div class="endorsement-header">
+        <span>🏅 Endorsement Coverage</span>
+        <button class="legend-close" (click)="showEndorsementPanel = false">✕</button>
+      </div>
+      <div class="endorsement-bars">
+        <div class="bar-row">
+          <span class="bar-label">✅ Certified</span>
+          <div class="bar-track">
+            <div class="bar-fill certified" [style.width.%]="getEndorsementStats().certifiedPct"></div>
+          </div>
+          <span class="bar-value">{{ getEndorsementStats().certified }} ({{ getEndorsementStats().certifiedPct }}%)</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">⭐ Promoted</span>
+          <div class="bar-track">
+            <div class="bar-fill promoted" [style.width.%]="getEndorsementStats().promotedPct"></div>
+          </div>
+          <span class="bar-value">{{ getEndorsementStats().promoted }} ({{ getEndorsementStats().promotedPct }}%)</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">— None</span>
+          <div class="bar-track">
+            <div class="bar-fill none" [style.width.%]="100 - getEndorsementStats().certifiedPct - getEndorsementStats().promotedPct"></div>
+          </div>
+          <span class="bar-value">{{ getEndorsementStats().none }}</span>
+        </div>
+      </div>
+      <div class="endorsement-domain-list">
+        <div class="domain-row" *ngFor="let d of getEndorsementByDomain()">
+          <span class="domain-name">{{ d.name }}</span>
+          <span class="domain-stats">{{ d.certified }}C / {{ d.promoted }}P / {{ d.total }}</span>
+        </div>
       </div>
     </div>
     

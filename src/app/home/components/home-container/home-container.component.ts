@@ -154,6 +154,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   /** Whether the legend panel is visible */
   public showLegendPanel: boolean = true;
 
+  /** Whether the endorsement stats panel is visible */
+  public showEndorsementPanel: boolean = false;
+
   /** Set of hidden domain IDs */
   public hiddenDomains: Set<string> = new Set();
 
@@ -1841,6 +1844,40 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         .nodeOpacity(1)
         .linkOpacity(0.6);
     }
+  }
+
+  /** Get endorsement statistics across all artifacts */
+  public getEndorsementStats (): { certified: number; promoted: number; none: number; total: number; certifiedPct: number; promotedPct: number } {
+    const artifacts = this.nodes.filter(n => n.type !== NodeType.Workspace);
+    const certified = artifacts.filter(n => n.metadata?.endorsement === 'Certified').length;
+    const promoted = artifacts.filter(n => n.metadata?.endorsement === 'Promoted').length;
+    const none = artifacts.length - certified - promoted;
+    const total = artifacts.length || 1;
+    return {
+      certified, promoted, none, total: artifacts.length,
+      certifiedPct: Math.round((certified / total) * 100),
+      promotedPct: Math.round((promoted / total) * 100),
+    };
+  }
+
+  /** Get endorsement stats broken down by domain */
+  public getEndorsementByDomain (): { name: string; certified: number; promoted: number; total: number }[] {
+    const domainStats = new Map<string, { name: string; certified: number; promoted: number; total: number }>();
+    const artifacts = this.nodes.filter(n => n.type !== NodeType.Workspace);
+
+    for (const node of artifacts) {
+      const ws = this.nodes.find(n => n.id === node.workspaceId && n.type === NodeType.Workspace);
+      const domainName = ws?.metadata?.domainName || 'Unassigned';
+      if (!domainStats.has(domainName)) {
+        domainStats.set(domainName, { name: domainName, certified: 0, promoted: 0, total: 0 });
+      }
+      const stats = domainStats.get(domainName)!;
+      stats.total++;
+      if (node.metadata?.endorsement === 'Certified') stats.certified++;
+      if (node.metadata?.endorsement === 'Promoted') stats.promoted++;
+    }
+
+    return Array.from(domainStats.values()).sort((a, b) => b.total - a.total);
   }
 
   /**
