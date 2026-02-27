@@ -30,17 +30,23 @@
 - **Interactive 3D Graph** - Powered by Three.js and 3d-force-graph
 - **Smart Clustering** - Automatic spatial organization by domains and workspaces
 - **Focus Mode** - Isolate specific workspaces or domains for detailed analysis
-- **Advanced Filtering** - Search by name, filter by type, hide/show artifact categories
+- **Search & Highlight** - Type to dim non-matching nodes, instantly find artifacts
+- **Side Panel** - Click any node for full metadata, upstream/downstream lineage
+- **Legend Panel** - Dynamic color reference for all artifact types in view
 - **Fog Effects** - Depth perception for complex tenants with thousands of objects
 
 ### 🏷️ **Enterprise Governance**
 - **Official Microsoft Badges** - Certified and Promoted endorsement visualization
+- **Endorsement Dashboard** - Coverage stats with per-domain breakdown (Certified/Promoted/None)
 - **Sensitivity Labels** - Confidential, Highly Confidential, Internal, Public classification
+- **Compliance View** - Instantly spot unlabeled artifacts across your tenant
+- **Impact Analysis** - BFS downstream tracing: "what breaks if I change this?"
 - **Domain Management** - Assign unassigned workspaces with smart domain suggestions
 - **Batch Operations** - Manage multiple workspace assignments efficiently
 
 ### 🔌 **Flexible Data Sources**
 - **Scanner API Integration** - Direct tenant scanning with Microsoft Fabric Admin API
+- **Fabric REST API** - Domains API + Items API for Notebooks, Pipelines, Eventstreams
 - **JSON File Import** - Load pre-scanned data for offline analysis
 - **Mock Data Support** - Demo mode with 50+ sample workspaces for testing
 
@@ -146,11 +152,21 @@ Isolate specific workspaces or domains to reduce visual complexity:
 - Click workspace to focus on workspace artifacts
 - Press ESC or click "Show All" to reset
 
-#### 🔍 Advanced Filtering
-- **Search Bar** - Find artifacts by name (case-insensitive)
+#### 🔍 Search & Highlight
+- **Smart Search** - Type to highlight matching nodes; non-matches dim to 8% opacity
 - **Type Filters** - Show/hide specific artifact types
 - **Fog Toggle** - Enable depth fog for large tenants
 - **Unassigned Toggle** - Hide/show workspaces without domains
+
+#### 📋 Node Detail Panel
+Click any node to open the side panel with:
+- Full metadata (endorsement, sensitivity label, description)
+- Upstream and downstream dependencies
+- **Impact Analysis** button — traces ALL downstream dependents
+
+#### 🏅 Governance Dashboards
+- **Trust Dashboard** - Endorsement coverage bar chart with per-domain breakdown
+- **Compliance View** - Highlight unlabeled artifacts, badge shows gap count
 
 #### 🏷️ Domain Management
 Assign workspaces to domains with smart suggestions:
@@ -176,7 +192,7 @@ Assign workspaces to domains with smart suggestions:
 | **UI Framework** | Angular Material |
 | **State Management** | RxJS Observables |
 | **Build System** | Angular CLI, Webpack |
-| **API Integration** | Microsoft Fabric Admin Scanner API v1.0 |
+| **API Integration** | Microsoft Fabric Admin Scanner API v1.0, Fabric REST API (Domains, Items) |
 
 </div>
 
