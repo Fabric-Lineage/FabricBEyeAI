@@ -1533,24 +1533,24 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           }
           return 'rgba(255,255,255,0.02)';
         }
-        // Cross-workspace lineage: bright cyan — the hero connection
-        if (link.type === LinkType.CrossWorkspace) return `rgba(96,205,255,${0.85 * opacityMul})`;
-        // Contains: domain-colored — VISIBLE
+        // Cross-workspace: bright cyan — unmistakable
+        if (link.type === LinkType.CrossWorkspace) return `rgba(96,205,255,${0.95 * opacityMul})`;
+        // Contains: domain-colored, bright and saturated
         if (link.type === LinkType.Contains) {
           const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source;
           const sourceNode = this.nodeMap.get(sourceId);
           if (sourceNode?.metadata?.domainId) {
-            return this.getDomainColorRGBA(sourceNode.metadata.domainId, 0.7 * opacityMul);
+            return this.getDomainColorRGBA(sourceNode.metadata.domainId, 0.85 * opacityMul);
           }
-          return `rgba(255,255,255,${0.4 * opacityMul})`;
+          return `rgba(255,255,255,${0.5 * opacityMul})`;
         }
-        // Artifact-to-artifact lineage: warm white
-        return `rgba(220,220,200,${0.6 * opacityMul})`;
+        // Artifact lineage: bright golden — distinct from white and cyan
+        return `rgba(255,200,80,${0.75 * opacityMul})`;
       })
       .linkWidth((link: any) => {
         if (link.type === LinkType.CrossWorkspace) return 2.5;
-        if (link.type === LinkType.Contains) return 1.5;
-        return 1.2;
+        if (link.type === LinkType.Contains) return 1.8;
+        return 1.5;
       })
       .linkLabel((link: any) => {
         const sourceName = typeof link.source === 'object' ? link.source.name : link.source;
@@ -1621,21 +1621,21 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           }
           return 'rgba(255,255,255,0.02)';
         }
-        if (link.type === LinkType.CrossWorkspace) return `rgba(96,205,255,${0.85 * opacityMul})`;
+        if (link.type === LinkType.CrossWorkspace) return `rgba(96,205,255,${0.95 * opacityMul})`;
         if (link.type === LinkType.Contains) {
           const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source;
           const sourceNode = this.nodeMap.get(sourceId);
           if (sourceNode?.metadata?.domainId) {
-            return this.getDomainColorRGBA(sourceNode.metadata.domainId, 0.7 * opacityMul);
+            return this.getDomainColorRGBA(sourceNode.metadata.domainId, 0.85 * opacityMul);
           }
-          return `rgba(255,255,255,${0.4 * opacityMul})`;
+          return `rgba(255,255,255,${0.5 * opacityMul})`;
         }
-        return `rgba(220,220,200,${0.6 * opacityMul})`;
+        return `rgba(255,200,80,${0.75 * opacityMul})`;
       })
       .linkWidth((link: any) => {
         if (link.type === LinkType.CrossWorkspace) return 2.5;
-        if (link.type === LinkType.Contains) return 1.5;
-        return 1.2;
+        if (link.type === LinkType.Contains) return 1.8;
+        return 1.5;
       });
   }
 
