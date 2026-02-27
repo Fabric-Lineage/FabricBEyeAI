@@ -85,6 +85,9 @@ const COLOR_ISOLATED = '#FFD700'; // Isolated domain highlight
   styleUrls: ['./home-container.component.less']
 })
 export class HomeContainerComponent implements OnInit, OnDestroy {
+  // Expose enum to template
+  public NodeType = NodeType;
+
   // =================================================================
   // CORE DATA PROPERTIES
   // =================================================================
@@ -174,6 +177,10 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
 
   /** Search term for assignment panel */
   public assignmentSearchTerm: string = '';
+
+  /** Side panel for node detail view */
+  public showSidePanel: boolean = false;
+  public sidePanelNode: any = null;
 
   /** Get count of unassigned workspaces */
   public get unassignedCount (): number {
@@ -536,7 +543,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
    * @param nodeType - The Fabric artifact type
    * @returns Hex color string
    */
-  private getNodeColor (nodeType: NodeType): string {
+  public getNodeColor (nodeType: NodeType): string {
     // Official Microsoft Fabric product icon colors
     switch (nodeType) {
       case NodeType.Workspace: {
@@ -1362,9 +1369,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
             1000
           );
 
-          // Also open lineage URL
-          const url: string = this.proxy.getEnvironment().url;
-          window.open(`${url}/groups/${node.id}/lineage`, '_blank');
+          this.openSidePanel(node);
           return;
         }
 
@@ -1377,10 +1382,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           800
         );
 
-        if (node.type === NodeType.SemanticModel) {
-          const url: string = this.proxy.getEnvironment().url;
-          window.open(`${url}/datahub/datasets/${node.id}`, '_blank');
-        }
+        this.openSidePanel(node);
       })
       .linkDirectionalParticles((link: any) => {
         if (link.type === LinkType.CrossWorkspace) {
@@ -1707,6 +1709,49 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     this.draftAssignments.clear();
     this.selectedWorkspaces.clear();
     this.assignmentSearchTerm = '';
+  }
+
+  /**
+   * Opens side panel with details for the selected node
+   */
+  public openSidePanel (node: any): void {
+    this.sidePanelNode = node;
+    this.showSidePanel = true;
+  }
+
+  public closeSidePanel (): void {
+    this.showSidePanel = false;
+    this.sidePanelNode = null;
+  }
+
+  /** Get upstream nodes for the side panel node */
+  public getSidePanelUpstream (): Node[] {
+    if (!this.sidePanelNode) return [];
+    return this.links
+      .filter(l => (l as any).target === this.sidePanelNode.id || (l as any).target?.id === this.sidePanelNode.id)
+      .map(l => {
+        const sourceId = typeof (l as any).source === 'string' ? (l as any).source : (l as any).source?.id;
+        return this.nodes.find(n => n.id === sourceId);
+      })
+      .filter((n): n is Node => !!n && n.type !== NodeType.Workspace);
+  }
+
+  /** Get downstream nodes for the side panel node */
+  public getSidePanelDownstream (): Node[] {
+    if (!this.sidePanelNode) return [];
+    return this.links
+      .filter(l => (l as any).source === this.sidePanelNode.id || (l as any).source?.id === this.sidePanelNode.id)
+      .map(l => {
+        const targetId = typeof (l as any).target === 'string' ? (l as any).target : (l as any).target?.id;
+        return this.nodes.find(n => n.id === targetId);
+      })
+      .filter((n): n is Node => !!n && n.type !== NodeType.Workspace);
+  }
+
+  /** Get artifact count in a workspace for side panel */
+  public getWorkspaceArtifactCount (): number {
+    if (!this.sidePanelNode) return 0;
+    return this.nodes.filter(n => n.workspaceId === this.sidePanelNode.id && n.type !== NodeType.Workspace).length;
   }
 
   /**

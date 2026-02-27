@@ -254,6 +254,85 @@
       
       <button class="reset-btn" (click)="resetFilters()">Reset All Filters</button>
     </div>
+
+    <!-- Side Panel — Node Detail View -->
+    <div class="side-panel" *ngIf="showSidePanel && sidePanelNode" [class.open]="showSidePanel">
+      <div class="side-panel-header">
+        <h3>{{ sidePanelNode.name }}</h3>
+        <button class="close-btn" (click)="closeSidePanel()">✕</button>
+      </div>
+      <div class="side-panel-type">
+        <span class="type-badge" [style.background]="getNodeColor(sidePanelNode.type)">
+          {{ NodeType[sidePanelNode.type] }}
+        </span>
+      </div>
+      <div class="side-panel-body">
+        <!-- Workspace details -->
+        <ng-container *ngIf="sidePanelNode.type === 0">
+          <div class="detail-row">
+            <span class="label">Domain</span>
+            <span class="value">{{ sidePanelNode.metadata?.domainName || 'Unassigned' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Artifacts</span>
+            <span class="value">{{ getWorkspaceArtifactCount() }}</span>
+          </div>
+          <div class="detail-row" *ngIf="sidePanelNode.metadata?.capacityId">
+            <span class="label">Capacity</span>
+            <span class="value">{{ sidePanelNode.metadata?.capacityId }}</span>
+          </div>
+          <div class="detail-row" *ngIf="sidePanelNode.metadata?.state">
+            <span class="label">State</span>
+            <span class="value">{{ sidePanelNode.metadata?.state }}</span>
+          </div>
+        </ng-container>
+
+        <!-- Artifact details -->
+        <ng-container *ngIf="sidePanelNode.type !== 0">
+          <div class="detail-row" *ngIf="sidePanelNode.metadata?.endorsement">
+            <span class="label">Endorsement</span>
+            <span class="value endorsement" [class.certified]="sidePanelNode.metadata?.endorsement === 'Certified'"
+                  [class.promoted]="sidePanelNode.metadata?.endorsement === 'Promoted'">
+              {{ sidePanelNode.metadata?.endorsement }}
+            </span>
+          </div>
+          <div class="detail-row" *ngIf="sidePanelNode.metadata?.certifiedBy">
+            <span class="label">Certified By</span>
+            <span class="value">{{ sidePanelNode.metadata?.certifiedBy }}</span>
+          </div>
+          <div class="detail-row" *ngIf="sidePanelNode.metadata?.sensitivityLabel">
+            <span class="label">Sensitivity</span>
+            <span class="value">{{ sidePanelNode.metadata?.sensitivityLabel?.labelId || 'None' }}</span>
+          </div>
+          <div class="detail-row" *ngIf="sidePanelNode.metadata?.description">
+            <span class="label">Description</span>
+            <span class="value">{{ sidePanelNode.metadata?.description }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Workspace</span>
+            <span class="value">{{ sidePanelNode.workspaceId }}</span>
+          </div>
+        </ng-container>
+
+        <!-- Lineage: Upstream -->
+        <div class="lineage-section" *ngIf="getSidePanelUpstream().length > 0">
+          <h4>⬆ Upstream ({{ getSidePanelUpstream().length }})</h4>
+          <div class="lineage-item" *ngFor="let node of getSidePanelUpstream()">
+            <span class="dot" [style.background]="getNodeColor(node.type)"></span>
+            {{ node.name }}
+          </div>
+        </div>
+
+        <!-- Lineage: Downstream -->
+        <div class="lineage-section" *ngIf="getSidePanelDownstream().length > 0">
+          <h4>⬇ Downstream ({{ getSidePanelDownstream().length }})</h4>
+          <div class="lineage-item" *ngFor="let node of getSidePanelDownstream()">
+            <span class="dot" [style.background]="getNodeColor(node.type)"></span>
+            {{ node.name }}
+          </div>
+        </div>
+      </div>
+    </div>
     
     <div id="3d-graph"></div>
 </section>
