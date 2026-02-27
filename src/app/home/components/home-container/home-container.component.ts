@@ -1240,6 +1240,11 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       })
       .d3Force('domainCluster', this.createDomainClusterForce())
       .linkOpacity(1.0) // Full opacity - we control it in linkColor
+      .linkCurvature((link: any) => {
+        // Slight curve for Contains links to separate from straight cross-workspace lines
+        return link.type === LinkType.Contains ? 0.15 : 0;
+      })
+      .linkCurveRotation((link: any) => Math.random() * Math.PI)  // Randomize curve plane
       // Directional arrows with elegant styling
       .linkDirectionalArrowLength((link: any) => {
         return link.type === LinkType.CrossWorkspace ? 4 : 0;
@@ -1872,6 +1877,17 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     // "l" : toggle legend
     if (event.key === 'l' && !(event.target as HTMLElement)?.closest('input, textarea')) {
       this.toggleLegendPanel();
+    }
+
+    // "f" : toggle filters
+    if (event.key === 'f' && !(event.target as HTMLElement)?.closest('input, textarea')) {
+      this.toggleFilterPanel();
+    }
+
+    // Space : toggle pause/resume
+    if (event.key === ' ' && !(event.target as HTMLElement)?.closest('input, textarea')) {
+      event.preventDefault();
+      this.toggleSimulation();
     }
   }
 

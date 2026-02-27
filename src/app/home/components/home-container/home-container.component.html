@@ -1,18 +1,20 @@
 <section class="container" [ngClass]="{'details': !shouldShowGraph}">
     <div class="scanDetails"  *ngIf="!shouldShowGraph">
-      <p class="title">Use FabricBEye to generate a 3D visualization of Microsoft Fabric workspaces and their connections.</p>
-      <p class="subTitle">Visualize lineage across Semantic Models, Lakehouses, Dataflows, and Reports in your Fabric tenant.</p>
+      <p class="title">Explore your Microsoft Fabric tenant in 3D</p>
+      <p class="subTitle">Visualize lineage, governance, and cross-workspace data flows across Semantic Models, Lakehouses, Pipelines, Notebooks, and more.</p>
       <div class="buttonContainer">
         <div class="scanButton" (click)="startScan()">
-          <p>Scan tenant</p>
+          <p>🔍 Scan Tenant</p>
         </div>
-        <!-- <mat-spinner class="spinner" *ngIf="isScanTenantInProgress"></mat-spinner> -->
         <div class="visButton" (click)="onAddFile()">
-          <p>Show visualization</p>
+          <p>📂 Load JSON</p>
         </div>
         <div class="visButton" style="margin-left: 20px;" (click)="loadDemoMode()">
-           <p>Demo Mode</p>
+           <p>🎮 Demo Mode</p>
         </div>
+      </div>
+      <div class="keyboard-hints" style="margin-top: 24px; color: rgba(255,255,255,0.4); font-size: 12px; font-family: 'Segoe UI', sans-serif;">
+        Keyboard: <kbd>/</kbd> Search &nbsp; <kbd>R</kbd> Reset &nbsp; <kbd>L</kbd> Legend &nbsp; <kbd>F</kbd> Filters &nbsp; <kbd>Space</kbd> Pause &nbsp; <kbd>Esc</kbd> Close
       </div>
     </div>
     <img class="imageGraph" src="assets/MaskGroup.png" *ngIf="!shouldShowGraph">
