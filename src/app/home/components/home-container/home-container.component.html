@@ -112,15 +112,24 @@
           <span class="domain-ws-count">{{ getDomainWorkspaceCount(domain.id) }}</span>
         </div>
       </div>
-      <div class="legend-section-title">Artifact Types</div>
+      <div class="legend-section-title">Nodes</div>
       <div class="legend-item">
-        <span class="legend-dot" style="background: #107C10;"></span>
-        <span class="legend-label">Workspace</span>
+        <span class="legend-dot" style="background: linear-gradient(135deg, #3B82F6, #10B981, #F59E0B); border-radius: 50%;"></span>
+        <span class="legend-label">Workspace (by domain)</span>
       </div>
       <div class="legend-item" *ngFor="let entry of getActiveNodeTypes()">
         <span class="legend-dot" [style.background]="entry.color"></span>
         <span class="legend-label">{{ entry.label }}</span>
         <span class="legend-count">{{ entry.count }}</span>
+      </div>
+      <div class="legend-section-title">Links</div>
+      <div class="legend-item">
+        <span class="legend-dot" style="background: #60CDFF;"></span>
+        <span class="legend-label">Cross-workspace flow</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot" style="background: rgba(255,255,255,0.35);"></span>
+        <span class="legend-label">Contains (domain colored)</span>
       </div>
     </div>
 
