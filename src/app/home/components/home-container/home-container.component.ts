@@ -1205,7 +1205,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       .width(window.innerWidth)
       .height(window.innerHeight)
       .backgroundColor('#1b1a19')
-      .enableNodeDrag(true)
+      .enableNodeDrag(false)
       .nodeRelSize(8)
       // Pre-compute layout so the graph appears settled (critical for big tenants)
       .warmupTicks(visibleNodes.length > 200 ? 100 : 50)
