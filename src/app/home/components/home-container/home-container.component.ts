@@ -151,6 +151,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   /** Whether the filter panel is visible */
   public showFilterPanel: boolean = false;
 
+  /** Whether the legend panel is visible */
+  public showLegendPanel: boolean = true;
+
   /** Set of hidden domain IDs */
   public hiddenDomains: Set<string> = new Set();
 
@@ -1722,6 +1725,28 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   public closeSidePanel (): void {
     this.showSidePanel = false;
     this.sidePanelNode = null;
+  }
+
+  /** Toggle legend panel visibility */
+  public toggleLegendPanel (): void {
+    this.showLegendPanel = !this.showLegendPanel;
+  }
+
+  /** Get unique artifact types present in the current graph */
+  public getActiveNodeTypes (): { type: NodeType; label: string; color: string; count: number }[] {
+    const typeCounts = new Map<NodeType, number>();
+    for (const node of this.nodes) {
+      if (node.type === NodeType.Workspace) continue;
+      typeCounts.set(node.type, (typeCounts.get(node.type) || 0) + 1);
+    }
+    return Array.from(typeCounts.entries())
+      .map(([type, count]) => ({
+        type,
+        label: NodeType[type],
+        color: this.getNodeColor(type),
+        count
+      }))
+      .sort((a, b) => b.count - a.count);
   }
 
   /** Get upstream nodes for the side panel node */

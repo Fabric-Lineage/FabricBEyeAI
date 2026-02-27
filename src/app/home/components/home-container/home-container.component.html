@@ -67,6 +67,10 @@
       <button class="control-btn" (click)="toggleFilterPanel()" title="Show filters">
         <span>🎛️</span> Filters
       </button>
+
+      <button class="control-btn" (click)="toggleLegendPanel()" [class.active]="showLegendPanel" title="Show/hide legend">
+        <span>🗺️</span> Legend
+      </button>
       
       <button class="control-btn" (click)="exportToPNG()" title="Export as PNG">
         <span>📷</span>
@@ -85,6 +89,23 @@
     <!-- Unassigned Mode Instructions -->
     <div class="focus-instructions" style="background: #FF9800;" *ngIf="shouldShowGraph && showUnassignedOnly && !showAssignmentPanel">
       <span>🏷️</span> Showing <strong>{{ unassignedCount }} unassigned workspace{{ unassignedCount !== 1 ? 's' : '' }}</strong> (orange) - Click "Unassigned" button to manage
+    </div>
+
+    <!-- Legend Panel -->
+    <div class="legend-panel" *ngIf="shouldShowGraph && showLegendPanel">
+      <div class="legend-header">
+        <span>🗺️ Legend</span>
+        <button class="legend-close" (click)="showLegendPanel = false">✕</button>
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot" style="background: #107C10;"></span>
+        <span class="legend-label">Workspace</span>
+      </div>
+      <div class="legend-item" *ngFor="let entry of getActiveNodeTypes()">
+        <span class="legend-dot" [style.background]="entry.color"></span>
+        <span class="legend-label">{{ entry.label }}</span>
+        <span class="legend-count">{{ entry.count }}</span>
+      </div>
     </div>
     
     <!-- Domain Assignment Panel -->
