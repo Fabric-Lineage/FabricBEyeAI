@@ -739,6 +739,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           targetStorageMode: 'Import',
           endorsementDetails: { endorsement: 'Promoted' },
           sensitivityLabel: { labelId: SENSITIVITY_LABELS.INTERNAL },
+          upstreamDatasets: [
+            { targetDatasetId: ArtifactIds.dataset_sales_analytics, groupId: 'ws-0008' }
+          ],
           tables: [
             { name: 'FactCampaigns', columns: [{ name: 'CampaignID', dataType: 'Int64' }] }
           ],
@@ -1061,9 +1064,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           endorsementDetails: { endorsement: 'Certified', certifiedBy: MOCK_USERS.admin.emailAddress },
           sensitivityLabel: { labelId: SENSITIVITY_LABELS.HIGHLY_CONFIDENTIAL },
           upstreamDatasets: [
-            { targetDatasetId: ArtifactIds.dataset_sales_analytics, groupId: 'ws-0003' },
-            { targetDatasetId: ArtifactIds.dataset_finance_general_ledger, groupId: 'ws-0004' },
-            { targetDatasetId: 'art-supply-dataset', groupId: 'ws-0014' }
+            { targetDatasetId: ArtifactIds.dataset_sales_analytics, groupId: 'ws-0008' },
+            { targetDatasetId: ArtifactIds.dataset_finance_general_ledger, groupId: 'ws-0009' },
+            { targetDatasetId: ArtifactIds.dataset_hr_analytics, groupId: 'ws-0011' }
           ],
           tables: [
             { name: 'FactKPI', columns: [{ name: 'KPIID', dataType: 'String' }] }
@@ -1116,6 +1119,10 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           targetStorageMode: 'Import',
           endorsementDetails: { endorsement: 'Certified', certifiedBy: MOCK_USERS.admin.emailAddress },
           sensitivityLabel: { labelId: SENSITIVITY_LABELS.HIGHLY_CONFIDENTIAL },
+          upstreamDatasets: [
+            { targetDatasetId: ArtifactIds.dataset_finance_general_ledger, groupId: 'ws-0009' },
+            { targetDatasetId: ArtifactIds.dataset_hr_analytics, groupId: 'ws-0011' }
+          ],
           tables: [
             { name: 'FactAudit', columns: [{ name: 'AuditID', dataType: 'String' }] }
           ],
