@@ -1338,12 +1338,13 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
 
         if (activeNode) {
           this.highlightNodes.add(activeNode);
-          // Highlight connected nodes and links
           this.links.forEach(link => {
-            if (link.source === activeNode.id || link.target === activeNode.id) {
+            const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source;
+            const targetId = typeof link.target === 'object' ? (link.target as any).id : link.target;
+            if (sourceId === activeNode.id || targetId === activeNode.id) {
               this.highlightLinks.add(link);
               const connectedNode = this.nodes.find(n =>
-                n.id === (link.source === activeNode.id ? link.target : link.source)
+                n.id === (sourceId === activeNode.id ? targetId : sourceId)
               );
               if (connectedNode) this.highlightNodes.add(connectedNode);
             }
@@ -1386,10 +1387,12 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
 
         // Highlight connected nodes and links
         this.links.forEach(link => {
-          if (link.source === node.id || link.target === node.id) {
+          const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source;
+          const targetId = typeof link.target === 'object' ? (link.target as any).id : link.target;
+          if (sourceId === node.id || targetId === node.id) {
             this.highlightLinks.add(link);
             const connectedNode = this.nodes.find(n =>
-              n.id === (link.source === node.id ? link.target : link.source)
+              n.id === (sourceId === node.id ? targetId : sourceId)
             );
             if (connectedNode) this.highlightNodes.add(connectedNode);
           }
@@ -1464,13 +1467,17 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           return group;
         }
 
-        // Workspace: larger badge with domain info
+        // Workspace: larger badge colored by domain
         const group = new THREE.Group();
+
+        const domainColor = node.metadata?.domainId
+          ? '#' + this.getDomainColor(node.metadata.domainId).toString(16).padStart(6, '0')
+          : '#107C10';
 
         const sprite = new SpriteText(node.name);
         sprite.color = '#FFFFFF';
         sprite.textHeight = 6;
-        sprite.backgroundColor = 'rgba(16, 124, 16, 0.95)';
+        sprite.backgroundColor = domainColor + 'E6'; // 90% opacity
         sprite.padding = 4;
         sprite.borderRadius = 5;
         sprite.fontWeight = '700';
