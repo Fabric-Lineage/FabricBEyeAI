@@ -2,49 +2,61 @@
 
 :host {
   mat-toolbar {
-    background-color: #1F233E;
+    background-color: #1b1a19;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .toolBar {
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    padding: 0 24px;
   }
 
-  .imageGraph {
-    width: 232px;
-    height: 48px;
-    margin-left: 122px;
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+
+    &:hover .brand-text {
+      color: #00BCF2;
+    }
   }
 
-  .avatar {
-    width: 30px;
-    height: 30px;
+  .brand-icon {
+    font-size: 28px;
   }
 
-  .title {
-    margin-left: 4px;
-  }
-
-  .fill-remaining-space {
-    flex: 1 1 auto;
+  .brand-text {
+    font-family: 'Segoe UI', sans-serif;
+    font-weight: 600;
+    font-size: 20px;
+    color: #ffffff;
+    letter-spacing: -0.3px;
+    transition: color 0.15s ease;
   }
 
   .welcomeContainer {
     display: flex;
-    gap: 8px;
-    margin-right: 120px;
+    gap: 12px;
+    align-items: center;
 
     .welcome {
-      font-family: Segoe UI;
-      font-style: normal;
-      font-weight: normal;
-      font-size: 24px;
-      line-height: 32px;
-      text-decoration:none;
-      color: #FFFFFF;
+      font-family: 'Segoe UI', sans-serif;
+      font-weight: 400;
+      font-size: 14px;
+      line-height: 20px;
+      text-decoration: none;
+      color: rgba(255, 255, 255, 0.7);
+      padding: 6px 12px;
+      border-radius: 4px;
+      transition: all 0.15s ease;
 
       &:hover {
-        color: @theme-secondary-color;
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.06);
       }
     }
   }

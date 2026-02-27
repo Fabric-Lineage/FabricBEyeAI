@@ -68,16 +68,10 @@ const DOMAIN_LABEL_HEIGHT = 8;
 const DOMAIN_LABEL_OFFSET = 15;
 
 // Microsoft Fabric Brand Colors
-const COLOR_FABRIC_GREEN = '#107C10';
 const COLOR_FABRIC_BLUE = '#0078D4';
-const COLOR_CERTIFIED_GOLD = '#FFD700';
-const COLOR_FOCUS_MODE_GREEN = '#10B981';
 
-// Link Arrow Colors (improved visibility)
-const COLOR_ARROW_CROSS_WS = '#00BCF2'; // Bright cyan for cross-workspace
-const COLOR_ARROW_CONTAINS = '#A0A0A0'; // Gray for contains relationships
-const COLOR_FOCUS_MODE = '#107C10'; // Clickable workspaces in focus mode
-const COLOR_ISOLATED = '#FFD700'; // Isolated domain highlight
+// Link Arrow Colors
+const COLOR_ARROW_CROSS_WS = '#60CDFF'; // Soft cyan for cross-workspace lineage
 
 @Component({
   selector: 'home-container',
@@ -1270,7 +1264,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       .linkOpacity(1.0) // Full opacity - we control it in linkColor
       // Directional arrows with elegant styling
       .linkDirectionalArrowLength((link: any) => {
-        return link.type === LinkType.CrossWorkspace ? 6 : 0; // Only show arrows on cross-workspace lineage
+        return link.type === LinkType.CrossWorkspace ? 4 : 0;
       })
       .linkDirectionalArrowRelPos(1)
       .linkDirectionalArrowColor((link: any) => {
@@ -1299,15 +1293,15 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         }
 
         return `
-          <div style="background: rgba(0,0,0,0.95); padding: 16px; border-radius: 10px; border: 2px solid ${this.getNodeColor(node.type)}; min-width: 240px;">
-            <div style="font-size: 18px; font-weight: bold; color: ${this.getNodeColor(node.type)}; margin-bottom: 8px;">${node.name}</div>
-            <div style="font-size: 13px; color: #10B981; margin-bottom: 6px;">📦 ${typeLabel}</div>
-            ${node.type === NodeType.Workspace ? `<div style="font-size: 12px; color: #60A5FA;">🏢 Domain: ${domainName}</div>` : `<div style="font-size: 12px; color: #60A5FA;">📁 ${this.getWorkspaceName(node.workspaceId)}</div>`}
-            ${endorsement !== 'None' ? `<div style="font-size: 13px; color: ${endorsementColor}; margin-top: 8px; padding: 4px 10px; background: rgba(0,120,212,0.15); border: 1px solid ${endorsementColor}; border-radius: 4px; display: inline-block; font-weight: 600;">${endorsementIcon}${endorsement}</div>` : ''}
+          <div style="background: #292827; padding: 14px 16px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); min-width: 220px; font-family: 'Segoe UI', sans-serif; box-shadow: 0 8px 24px rgba(0,0,0,0.6);">
+            <div style="font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 6px;">${node.name}</div>
+            <div style="font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 4px;">${typeLabel}</div>
+            ${node.type === NodeType.Workspace ? `<div style="font-size: 12px; color: rgba(255,255,255,0.5);">Domain: ${domainName}</div>` : `<div style="font-size: 12px; color: rgba(255,255,255,0.5);">Workspace: ${this.getWorkspaceName(node.workspaceId)}</div>`}
+            ${endorsement !== 'None' ? `<div style="font-size: 12px; color: ${endorsementColor}; margin-top: 8px; padding: 3px 8px; background: rgba(0,120,212,0.1); border: 1px solid rgba(0,120,212,0.3); border-radius: 4px; display: inline-block; font-weight: 600;">${endorsementIcon}${endorsement}</div>` : ''}
             ${sensitivityHTML}
-            ${node.metadata?.description ? `<div style="font-size: 11px; color: #aaa; margin-top: 8px; font-style: italic; border-top: 1px solid #333; padding-top: 6px;">${node.metadata.description}</div>` : ''}
-            ${node.crossDownstreamWSIds?.length ? `<div style="font-size: 12px; color: #10B981; margin-top: 8px;">⬇ ${node.crossDownstreamWSIds.length} downstream workspaces</div>` : ''}
-            ${node.crossUpstreamWSIds?.length ? `<div style="font-size: 12px; color: #EF4444;">⬆ ${node.crossUpstreamWSIds.length} upstream workspaces</div>` : ''}
+            ${node.metadata?.description ? `<div style="font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 8px; font-style: italic; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px;">${node.metadata.description}</div>` : ''}
+            ${node.crossDownstreamWSIds?.length ? `<div style="font-size: 12px; color: #60CDFF; margin-top: 6px;">↓ ${node.crossDownstreamWSIds.length} downstream</div>` : ''}
+            ${node.crossUpstreamWSIds?.length ? `<div style="font-size: 12px; color: #F87171;">↑ ${node.crossUpstreamWSIds.length} upstream</div>` : ''}
           </div>
         `;
       })
@@ -1409,14 +1403,11 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         this.openSidePanel(node);
       })
       .linkDirectionalParticles((link: any) => {
-        // Only animate cross-workspace lineage — the data flow story
-        return link.type === LinkType.CrossWorkspace ? 4 : 0;
+        return link.type === LinkType.CrossWorkspace ? 3 : 0;
       })
-      .linkDirectionalParticleSpeed(0.004)
-      .linkDirectionalParticleWidth(1.5)
-      .linkDirectionalParticleColor((link: any) => {
-        return link.type === LinkType.CrossWorkspace ? '#00BCF2' : '#FFFFFF';
-      })
+      .linkDirectionalParticleSpeed(0.003)
+      .linkDirectionalParticleWidth(1.2)
+      .linkDirectionalParticleColor(() => '#60CDFF')
       .nodeThreeObject((node: any) => {
         if (node.type !== NodeType.Workspace) {
           // Create group to hold icon + label + endorsement badge
@@ -1428,11 +1419,11 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
 
           // Add artifact name label below icon (tagged for LOD)
           const label = new SpriteText(node.name);
-          label.color = '#FFFFFF';
-          label.textHeight = 3;
-          label.backgroundColor = 'rgba(0,0,0,0.85)';
+          label.color = 'rgba(255,255,255,0.85)';
+          label.textHeight = 2.5;
+          label.backgroundColor = 'rgba(20,20,20,0.8)';
           label.padding = 2;
-          label.borderRadius = 3;
+          label.borderRadius = 2;
           (label as any).position.set(0, -8, 0);
           (label as any).userData = { isLabel: true };
           group.add(label as any);
@@ -1456,15 +1447,17 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
 
         const domainColor = node.metadata?.domainId
           ? '#' + this.getDomainColor(node.metadata.domainId).toString(16).padStart(6, '0')
-          : '#107C10';
+          : '#6B7FA3';
 
         const sprite = new SpriteText(node.name);
         sprite.color = '#FFFFFF';
-        sprite.textHeight = 6;
-        sprite.backgroundColor = domainColor + 'E6'; // 90% opacity
+        sprite.textHeight = 5;
+        sprite.backgroundColor = 'rgba(30, 30, 30, 0.9)';
         sprite.padding = 4;
-        sprite.borderRadius = 5;
-        sprite.fontWeight = '700';
+        sprite.borderRadius = 4;
+        sprite.fontWeight = '600';
+        sprite.borderColor = domainColor;
+        sprite.borderWidth = 1.5;
         group.add(sprite as any);
 
         // Add domain name below workspace name
@@ -1500,9 +1493,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           return '#00FFFF';
         }
 
-        // UNASSIGNED WORKSPACES: Bright orange
+        // UNASSIGNED WORKSPACES: Muted orange
         if (node.type === NodeType.Workspace && node.metadata?.isUnassigned) {
-          return '#FF6600';
+          return '#B8864A';
         }
 
         // ASSIGNED WORKSPACES: Color by domain
@@ -1514,9 +1507,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         // Focus mode
         if (this.isolateMode && node.type === NodeType.Workspace) {
           if (this.isolatedDomain && node.metadata?.domainId === this.isolatedDomain) {
-            return '#FFD700';
+            return '#60CDFF';
           }
-          return '#10B981';
+          return '#6B7FA3';
         }
 
         // Dim non-highlighted
@@ -1530,21 +1523,21 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         if (this.highlightLinks.size > 0) {
           if (this.highlightLinks.has(link)) {
             if (link.type === LinkType.CrossWorkspace) return COLOR_ARROW_CROSS_WS;
-            if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.7)';
-            return 'rgba(200,200,200,0.8)';
+            if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.6)';
+            return 'rgba(200,200,200,0.7)';
           }
           return 'rgba(100,100,100,0.05)';
         }
-        // Cross-workspace: bright cyan — the data flow story
-        if (link.type === LinkType.CrossWorkspace) return 'rgba(0,188,242,0.8)';
-        // Contains: visible white — the structural connections
-        if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.25)';
-        return 'rgba(150,150,150,0.2)';
+        // Cross-workspace: soft cyan data flow
+        if (link.type === LinkType.CrossWorkspace) return 'rgba(96,205,255,0.6)';
+        // Contains: subtle structural connections
+        if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.18)';
+        return 'rgba(150,150,150,0.15)';
       })
       .linkWidth((link: any) => {
-        if (link.type === LinkType.CrossWorkspace) return 2.5;
-        if (link.type === LinkType.Contains) return 1;
-        return 0.5;
+        if (link.type === LinkType.CrossWorkspace) return 2;
+        if (link.type === LinkType.Contains) return 0.8;
+        return 0.4;
       })
       .onBackgroundClick(() => {
         // Clear all highlights and close panels
@@ -1654,7 +1647,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         const material = new THREE.MeshBasicMaterial({
           color: this.getDomainColor(domainId),
           transparent: true,
-          opacity: 0.08,
+          opacity: 0.04,
           side: THREE.BackSide,
           depthWrite: false
         });
@@ -1664,35 +1657,23 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         sphere.name = `domain-sphere-${domainId}`;
         scene.add(sphere);
 
-        // Add wireframe for better visibility
-        const wireframe = new THREE.WireframeGeometry(geometry);
-        const line = new THREE.LineSegments(wireframe, new THREE.LineBasicMaterial({
-          color: this.getDomainColor(domainId),
-          opacity: 0.3,
-          transparent: true
-        }));
-        line.position.set(center.x, center.y, center.z);
-        (line as any).userData = { domainId, type: 'domain-boundary' };
-        line.name = `domain-wireframe-${domainId}`;
-        scene.add(line);
-
         // Store references for later show/hide
         if (!this.domainBoundaryObjects.has(domainId)) {
           this.domainBoundaryObjects.set(domainId, []);
         }
-        this.domainBoundaryObjects.get(domainId)!.push(sphere, line);
+        this.domainBoundaryObjects.get(domainId)!.push(sphere);
 
         // Add clickable domain label
         const domain = this.domains.find(d => d.id === domainId);
         if (domain) {
           const labelGroup = new THREE.Group();
           const label = new SpriteText(domain.name);
-          label.color = '#FFFFFF';
-          label.textHeight = 8;
-          label.backgroundColor = 'rgba(0,0,0,0.8)';
-          label.padding = 6;
-          label.borderRadius = 6;
-          label.fontWeight = '700';
+          label.color = 'rgba(255,255,255,0.6)';
+          label.textHeight = 6;
+          label.backgroundColor = 'rgba(20,20,20,0.7)';
+          label.padding = 4;
+          label.borderRadius = 4;
+          label.fontWeight = '600';
           labelGroup.add(label as any);
           labelGroup.position.set(center.x, center.y + radius + 15, center.z);
           (labelGroup as any).userData = { domainId, type: 'domain-label', clickable: true };
@@ -1712,13 +1693,32 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   }
 
   private getDomainColor (domainId: string): number {
-    // Simple hash to generate consistent colors per domain
+    // Enterprise-grade muted palette — desaturated, professional tones
+    // These are hand-picked to be visually distinct but not garish
+    const ENTERPRISE_PALETTE = [
+      0x4A90B8, // Steel blue
+      0x6B8E7B, // Sage green
+      0x9B7DB8, // Soft purple
+      0xB8864A, // Warm bronze
+      0x7BA3A3, // Teal gray
+      0xA3697B, // Dusty rose
+      0x8B9E6B, // Olive
+      0x6B7FA3, // Slate blue
+      0xA38B6B, // Khaki
+      0x7B8BA3, // Cool gray-blue
+      0x8BA37B, // Muted green
+      0xA37B8B, // Mauve
+      0x6BA39B, // Sea foam
+      0x9B8B6B, // Sand
+      0x7B6BA3, // Lavender
+      0xA39B6B, // Olive gold
+    ];
+
     let hash = 0;
     for (let i = 0; i < domainId.length; i++) {
       hash = domainId.charCodeAt(i) + ((hash << 5) - hash);
     }
-    const hue = Math.abs(hash % 360);
-    return new THREE.Color(`hsl(${hue}, 70%, 50%)`).getHex();
+    return ENTERPRISE_PALETTE[Math.abs(hash) % ENTERPRISE_PALETTE.length];
   }
 
   public exportToPNG (): void {
@@ -2086,19 +2086,19 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           if (this.highlightLinks.size > 0) {
             if (this.highlightLinks.has(link)) {
               if (link.type === LinkType.CrossWorkspace) return COLOR_ARROW_CROSS_WS;
-              if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.7)';
-              return 'rgba(200,200,200,0.8)';
+              if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.6)';
+              return 'rgba(200,200,200,0.7)';
             }
             return 'rgba(100,100,100,0.05)';
           }
-          if (link.type === LinkType.CrossWorkspace) return 'rgba(0,188,242,0.8)';
-          if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.25)';
-          return 'rgba(150,150,150,0.2)';
+          if (link.type === LinkType.CrossWorkspace) return 'rgba(96,205,255,0.6)';
+          if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.18)';
+          return 'rgba(150,150,150,0.15)';
         })
         .linkWidth((link: any) => {
-          if (link.type === LinkType.CrossWorkspace) return 2.5;
-          if (link.type === LinkType.Contains) return 1;
-          return 0.5;
+          if (link.type === LinkType.CrossWorkspace) return 2;
+          if (link.type === LinkType.Contains) return 0.8;
+          return 0.4;
         });
     }
   }
