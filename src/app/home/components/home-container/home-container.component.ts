@@ -1176,34 +1176,10 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   }
 
   private applyVisibilityFilters (validLinks: Link[]): { visibleNodes: Node[], visibleLinks: Link[] } {
-    // FILTER DATA before passing to graph - remove unassigned workspaces and their artifacts
-    let visibleNodes = this.nodes;
-    let visibleLinks = validLinks;
-
-    if (!this.showUnassignedWorkspaces) {
-      const unassignedWorkspaceIds = new Set(
-        this.nodes
-          .filter(n => n.type === NodeType.Workspace && n.metadata?.isUnassigned)
-          .map(n => n.id)
-      );
-
-      // Remove unassigned workspaces and their artifacts
-      visibleNodes = this.nodes.filter(node => {
-        if (node.type === NodeType.Workspace && node.metadata?.isUnassigned) {
-          return false;
-        }
-        if (node.type !== NodeType.Workspace && node.workspaceId && unassignedWorkspaceIds.has(node.workspaceId)) {
-          return false;
-        }
-        return true;
-      });
-
-      // Remove links connected to removed nodes
-      const visibleNodeIds = new Set(visibleNodes.map(n => n.id));
-      visibleLinks = validLinks.filter(link =>
-        visibleNodeIds.has(link.source) && visibleNodeIds.has(link.target)
-      );
-    }
+    // ALL nodes go into the graph — visibility is controlled at runtime via nodeVisibility/linkVisibility
+    // This ensures unassigned workspaces can be toggled on/off without re-creating the graph
+    const visibleNodes = this.nodes;
+    const visibleLinks = validLinks;
 
     // Store visible nodes for domain boundaries and forces
     this.visibleNodes = visibleNodes;
@@ -2538,11 +2514,8 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   }
 
   public toggleUnassignedOnly (): void {
-    if (!this.showUnassignedOnly) {
-      this.openAssignmentPanel();
-    } else {
-      this.closeAssignmentPanel();
-    }
+    this.showUnassignedWorkspaces = !this.showUnassignedWorkspaces;
+    this.applyFilters();
   }
 
   /**
