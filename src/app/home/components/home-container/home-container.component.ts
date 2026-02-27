@@ -172,8 +172,8 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   /** Show assignment panel for bulk domain assignment */
   public showAssignmentPanel: boolean = false;
 
-  /** Show unassigned workspaces in graph (default: hidden) */
-  public showUnassignedWorkspaces: boolean = false;
+  /** Show unassigned workspaces in graph (default: true — show everything) */
+  public showUnassignedWorkspaces: boolean = true;
 
   /** Track if we're in demo mode (no API calls) */
   private isDemoMode: boolean = false;
@@ -1176,15 +1176,10 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   }
 
   private applyVisibilityFilters (validLinks: Link[]): { visibleNodes: Node[], visibleLinks: Link[] } {
-    // ALL nodes go into the graph — visibility is controlled at runtime via nodeVisibility/linkVisibility
-    // This ensures unassigned workspaces can be toggled on/off without re-creating the graph
-    const visibleNodes = this.nodes;
-    const visibleLinks = validLinks;
-
-    // Store visible nodes for domain boundaries and forces
-    this.visibleNodes = visibleNodes;
-
-    return { visibleNodes, visibleLinks };
+    // Default: show ALL workspaces (assigned + unassigned)
+    // No init-time filtering — everything goes into the graph
+    this.visibleNodes = this.nodes;
+    return { visibleNodes: this.nodes, visibleLinks: validLinks };
   }
 
   private initializeGraph (visibleNodes: Node[], visibleLinks: Link[]): void {
@@ -2514,7 +2509,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   }
 
   public toggleUnassignedOnly (): void {
-    this.showUnassignedWorkspaces = !this.showUnassignedWorkspaces;
+    this.showUnassignedOnly = !this.showUnassignedOnly;
     this.applyFilters();
   }
 

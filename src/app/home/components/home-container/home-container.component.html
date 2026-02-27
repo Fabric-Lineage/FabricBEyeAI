@@ -59,7 +59,7 @@
       </button>
 
       <button class="control-btn" (click)="toggleUnassignedOnly()" 
-              [class.active]="showUnassignedWorkspaces" title="Show workspaces not assigned to any domain">
+              [class.active]="showUnassignedOnly" title="Show only workspaces not assigned to any domain">
         <span>⚠️</span> No Domain
         <span class="badge warning" *ngIf="unassignedCount > 0">{{ unassignedCount }}</span>
       </button>
