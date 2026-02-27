@@ -1256,7 +1256,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       .width(window.innerWidth)
       .height(window.innerHeight)
       .backgroundColor('#1b1a19')
-      .enableNodeDrag(false)
+      .enableNodeDrag(true)
       .nodeRelSize(8)
       // Pre-compute layout so the graph appears settled (critical for big tenants)
       .warmupTicks(visibleNodes.length > 200 ? 100 : 50)
@@ -1275,6 +1275,15 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       .linkDirectionalArrowRelPos(1)
       .linkDirectionalArrowColor((link: any) => {
         return COLOR_ARROW_CROSS_WS;
+      })
+      // Animated particles on cross-workspace links — shows data flow direction
+      .linkDirectionalParticles((link: any) => {
+        return link.type === LinkType.CrossWorkspace ? 3 : 0;
+      })
+      .linkDirectionalParticleWidth(2)
+      .linkDirectionalParticleSpeed(0.006)
+      .linkDirectionalParticleColor((link: any) => {
+        return 'rgba(96,205,255,0.9)';
       })
       // Rich HTML tooltips
       .nodeLabel((node: any) => {
@@ -2392,38 +2401,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   }
 
   public onSearchChange (): void {
-    this.filterGraph();
-  }
-
-  private filterGraph (): void {
-    if (!this.graphInstance) return;
-
-    const searchLower = this.searchTerm.toLowerCase();
-    const matchIds = new Set<string>();
-
-    if (searchLower) {
-      // Find matching nodes
-      for (const node of this.nodes) {
-        if (node.name.toLowerCase().includes(searchLower) ||
-            NodeType[node.type].toLowerCase().includes(searchLower) ||
-            (node.metadata?.domainName || '').toLowerCase().includes(searchLower)) {
-          matchIds.add(node.id);
-        }
-      }
-    }
-
-    // Use nodeColor to dim non-matching nodes instead of hiding them
-    this.graphInstance
-      .nodeOpacity((node: any) => {
-        if (!searchLower) return 1;
-        return matchIds.has(node.id) ? 1 : 0.08;
-      })
-      .linkOpacity((link: any) => {
-        if (!searchLower) return 0.6;
-        const sourceId = typeof link.source === 'string' ? link.source : link.source?.id;
-        const targetId = typeof link.target === 'string' ? link.target : link.target?.id;
-        return (matchIds.has(sourceId) || matchIds.has(targetId)) ? 0.8 : 0.02;
-      });
+    this.applyFilters();
   }
 
   // ========== ADVANCED NAVIGATION FEATURES ==========
@@ -2564,12 +2542,19 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           if (!workspace || !this.isWorkspaceVisible(workspace)) return false;
         }
 
-        // Search filter
+        // Search filter — match name, type, domain, or parent workspace name
         if (this.searchTerm) {
           const searchLower = this.searchTerm.toLowerCase();
-          return node.name.toLowerCase().includes(searchLower) ||
-                 node.workspaceId?.toLowerCase().includes(searchLower) ||
-                 NodeType[node.type].toLowerCase().includes(searchLower);
+          const nameMatch = node.name.toLowerCase().includes(searchLower);
+          const typeMatch = NodeType[node.type].toLowerCase().includes(searchLower);
+          const domainMatch = (node.metadata?.domainName || '').toLowerCase().includes(searchLower);
+          // For artifacts, also match their parent workspace name
+          let wsMatch = false;
+          if (node.workspaceId) {
+            const ws = this.nodeMap.get(node.workspaceId);
+            if (ws) wsMatch = ws.name.toLowerCase().includes(searchLower);
+          }
+          return nameMatch || typeMatch || domainMatch || wsMatch;
         }
 
         return true;
@@ -2643,7 +2628,6 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     this.searchTerm = '';
 
     if (this.graphInstance) {
-      this.graphInstance.linkOpacity(0.5);
       this.applyFilters();
     }
   }
