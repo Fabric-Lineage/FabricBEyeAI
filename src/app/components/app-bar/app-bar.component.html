@@ -1,9 +1,10 @@
 <mat-toolbar class="toolBar" color="primary">
-  <span (click)="handleHomeNavigation()">
-    <img class="imageGraph" src="assets/logo.png">
+  <span class="brand" (click)="handleHomeNavigation()">
+    <span class="brand-icon">👁️</span>
+    <span class="brand-text">FabricBEye</span>
   </span>
   <div class="welcomeContainer">
     <button class="welcome" mat-button (click)="openDialog()">{{welcomeSTR}}</button>
-    <a target="_blank" class="welcome" href="https://maximshklar.wordpress.com/2021/07/22/introducing-powerbeye/">Learn More</a>
+    <a target="_blank" class="welcome" href="https://github.com/Fabric-Lineage/FabricBEyeAI">GitHub</a>
   </div>
 </mat-toolbar>
