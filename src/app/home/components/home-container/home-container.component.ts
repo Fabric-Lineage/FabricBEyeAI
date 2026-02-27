@@ -614,78 +614,50 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Texture cache for artifact icons
+  private textureCache: Map<string, THREE.Texture> = new Map();
+  private textureLoader = new THREE.TextureLoader();
+
+  private getOrLoadTexture (path: string): THREE.Texture {
+    if (!this.textureCache.has(path)) {
+      this.textureCache.set(path, this.textureLoader.load(path));
+    }
+    return this.textureCache.get(path)!;
+  }
+
   private getNodeTypeImage (nodeType: NodeType): THREE.Mesh {
-    let texture = null;
-    const loader = new THREE.TextureLoader();
+    let texturePath: string;
 
     switch (nodeType) {
-      case NodeType.Dashboard: {
-        texture = loader.load('assets/dashboard.png');
-        break;
-      }
-      case NodeType.Report: {
-        texture = loader.load('assets/report.png');
-        break;
-      }
-      case NodeType.PaginatedReport: {
-        texture = loader.load('assets/paginated-report.svg');
-        break;
-      }
-      case NodeType.SemanticModel: {
-        texture = loader.load('assets/dataset.png');
-        break;
-      }
+      case NodeType.Dashboard: texturePath = 'assets/dashboard.png'; break;
+      case NodeType.Report: texturePath = 'assets/report.png'; break;
+      case NodeType.PaginatedReport: texturePath = 'assets/paginated-report.svg'; break;
+      case NodeType.SemanticModel: texturePath = 'assets/dataset.png'; break;
       case NodeType.Dataflow:
-      case NodeType.DataflowGen2: {
-        texture = loader.load('assets/dataflow.png');
-        break;
-      }
-      case NodeType.Lakehouse: {
-        texture = loader.load('assets/lakehouse.svg');
-        break;
-      }
-      case NodeType.DataWarehouse: {
-        texture = loader.load('assets/datawarehouse.svg');
-        break;
-      }
-      case NodeType.Notebook: {
-        texture = loader.load('assets/notebook.svg');
-        break;
-      }
-      case NodeType.Pipeline: {
-        texture = loader.load('assets/pipeline.svg');
-        break;
-      }
-      case NodeType.Eventstream: {
-        texture = loader.load('assets/eventstream.svg');
-        break;
-      }
-      case NodeType.MLModel: {
-        texture = loader.load('assets/mlmodel.svg');
-        break;
-      }
-      case NodeType.KQLDatabase: {
-        texture = loader.load('assets/kqldatabase.svg');
-        break;
-      }
-      case NodeType.Datamart: {
-        texture = loader.load('assets/datamart.svg');
-        break;
-      }
-      default: {
-        texture = loader.load('assets/data source.png');
-        break;
-      }
+      case NodeType.DataflowGen2: texturePath = 'assets/dataflow.png'; break;
+      case NodeType.Lakehouse: texturePath = 'assets/lakehouse.svg'; break;
+      case NodeType.DataWarehouse: texturePath = 'assets/datawarehouse.svg'; break;
+      case NodeType.Notebook: texturePath = 'assets/notebook.svg'; break;
+      case NodeType.Pipeline: texturePath = 'assets/pipeline.svg'; break;
+      case NodeType.Eventstream: texturePath = 'assets/eventstream.svg'; break;
+      case NodeType.MLModel: texturePath = 'assets/mlmodel.svg'; break;
+      case NodeType.KQLDatabase: texturePath = 'assets/kqldatabase.svg'; break;
+      case NodeType.Datamart: texturePath = 'assets/datamart.svg'; break;
+      default: texturePath = 'assets/data source.png'; break;
     }
 
-    const cube = new THREE.Mesh(
-      new THREE.BoxGeometry(4, 4, 4),
+    const texture = this.getOrLoadTexture(texturePath);
+    const sprite = new THREE.Mesh(
+      new THREE.PlaneGeometry(6, 6),
       new THREE.MeshBasicMaterial({
-        map: texture
+        map: texture,
+        transparent: true,
+        side: THREE.DoubleSide,
+        depthWrite: false
       })
     );
 
-    return cube;
+    return sprite;
   }
 
   // =================================================================
@@ -1489,7 +1461,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
 
         return group;
       })
-      // Level of Detail: hide artifact labels when camera is far away
+      // Level of Detail: hide artifact labels when camera is far away + billboard icons
       .nodePositionUpdate((obj: any, coords: any, node: any) => {
         if (node.type !== NodeType.Workspace && obj.children) {
           const camera = graph.camera();
@@ -1498,6 +1470,10 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           obj.children.forEach((child: any) => {
             if (child.userData?.isLabel) {
               child.visible = dist < labelThreshold;
+            }
+            // Billboard icon planes to face camera
+            if (child.isMesh && child.geometry?.type === 'PlaneGeometry') {
+              child.quaternion.copy(camera.quaternion);
             }
           });
         }
