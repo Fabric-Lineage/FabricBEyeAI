@@ -1845,6 +1845,24 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     this.showLegendPanel = !this.showLegendPanel;
   }
 
+  /** Get domains that have visible workspaces in the graph */
+  public getVisibleDomains (): { id: string; name: string }[] {
+    const domainIds = new Set<string>();
+    this.nodes.forEach(n => {
+      if (n.type === NodeType.Workspace && n.metadata?.domainId && n.metadata.domainId !== 'UNASSIGNED') {
+        domainIds.add(n.metadata.domainId);
+      }
+    });
+    return this.domains
+      .filter(d => domainIds.has(d.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /** Get workspace count for a domain */
+  public getDomainWorkspaceCount (domainId: string): number {
+    return this.nodes.filter(n => n.type === NodeType.Workspace && n.metadata?.domainId === domainId).length;
+  }
+
   /** Get unique artifact types present in the current graph */
   public getActiveNodeTypes (): { type: NodeType; label: string; color: string; count: number }[] {
     const typeCounts = new Map<NodeType, number>();

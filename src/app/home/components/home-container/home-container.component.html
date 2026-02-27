@@ -109,6 +109,19 @@
         <span>🗺️ Legend</span>
         <button class="legend-close" (click)="showLegendPanel = false">✕</button>
       </div>
+      <div class="legend-section-title">Domains (click to fly)</div>
+      <div class="legend-domains">
+        <div class="domain-chip"
+             *ngFor="let domain of getVisibleDomains()"
+             [style.borderColor]="getDomainColorHex(domain.id)"
+             [class.active]="isolatedDomain === domain.id"
+             (click)="zoomToDomain(domain.id)">
+          <span class="domain-dot" [style.background]="getDomainColorHex(domain.id)"></span>
+          <span class="domain-name">{{ domain.name }}</span>
+          <span class="domain-ws-count">{{ getDomainWorkspaceCount(domain.id) }}</span>
+        </div>
+      </div>
+      <div class="legend-section-title">Artifact Types</div>
       <div class="legend-item">
         <span class="legend-dot" style="background: #107C10;"></span>
         <span class="legend-label">Workspace</span>
