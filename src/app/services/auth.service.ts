@@ -3,7 +3,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  public tokenUpdate: BehaviorSubject<string> = new BehaviorSubject('');;
+  public tokenUpdate: BehaviorSubject<string> = new BehaviorSubject(''); ;
 
   constructor () { }
 

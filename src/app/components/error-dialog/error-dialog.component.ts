@@ -18,7 +18,7 @@ export class ErrorDialogComponent implements OnInit, OnDestroy {
   public isScanTenantInProgress: boolean = true;
   private destroy$: Subject<void> = new Subject();
 
-  constructor(private dialogRef: MatDialogRef<ErrorDialogComponent>,
+  constructor (private dialogRef: MatDialogRef<ErrorDialogComponent>,
     @Inject(MAT_DIALOG_DATA) data: any) {
     this.dialogRef.disableClose = true;
     this.title = data.title;
@@ -26,16 +26,16 @@ export class ErrorDialogComponent implements OnInit, OnDestroy {
     this.errorMessage = data.errorMessage;
   }
 
-  public ngOnInit(): void {
+  public ngOnInit (): void {
 
   }
 
-  public ngOnDestroy(): void {
+  public ngOnDestroy (): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  public closeDialog() {
+  public closeDialog () {
     this.destroy$.next();
     this.dialogRef.close();
   }

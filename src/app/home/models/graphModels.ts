@@ -2,7 +2,7 @@ export enum NodeType {
   Workspace,
   Dashboard,
   Report,
-  SemanticModel,  // Renamed from Dataset for Fabric
+  SemanticModel, // Renamed from Dataset for Fabric
   Dataflow,
   // Fabric Data Engineering types
   Lakehouse,
@@ -10,7 +10,7 @@ export enum NodeType {
   SparkJobDefinition,
   // Fabric Data Factory types
   Pipeline,
-  DataflowGen2,  // More specific Fabric Dataflow
+  DataflowGen2, // More specific Fabric Dataflow
   // Fabric Data Warehouse types
   DataWarehouse,
   SQLAnalyticsEndpoint,

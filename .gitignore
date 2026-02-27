@@ -45,3 +45,14 @@ testem.log
 .DS_Store
 Thumbs.db
 /.angular
+
+# Playwright
+/test-results
+/playwright-report
+/blob-report
+
+# Agent
+scripts/agent/node_modules
+scripts/agent/dist
+scripts/agent/agent.log
+scripts/agent/src/backlog.json

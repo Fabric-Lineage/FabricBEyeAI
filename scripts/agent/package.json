@@ -1,0 +1,17 @@
+{
+  "name": "fabricbeyeai-agent",
+  "version": "1.0.0",
+  "description": "Autonomous AI development agent for FabricBEyeAI",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/agent.ts",
+    "start:timeout": "tsx src/agent.ts --timeout 4h"
+  },
+  "dependencies": {
+    "tsx": "^4.19.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}

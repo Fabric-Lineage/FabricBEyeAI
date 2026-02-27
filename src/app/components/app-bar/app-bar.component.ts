@@ -18,7 +18,7 @@ export class AppBarComponent {
   public welcomeSTR: string;
   public isNotFirstTime: boolean = false;
 
-  constructor(private dialog: MatDialog,
+  constructor (private dialog: MatDialog,
     private authService: AuthService) {
     this.welcomeSTR = Login;
 
@@ -41,15 +41,15 @@ export class AppBarComponent {
     });
   }
 
-  public handleHomeNavigation(): void {
+  public handleHomeNavigation (): void {
     location.reload();
   }
 
-  public openDialog() {
+  public openDialog () {
     this.dialog.open(LoginDialogComponent);
   }
 
-  public parseJwt(token: string) {
+  public parseJwt (token: string) {
     try {
       return JSON.parse(atob(token.split('.')[1]));
     } catch (e) {

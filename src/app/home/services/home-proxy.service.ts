@@ -79,12 +79,12 @@ export class HomeProxy {
    * Batch assign workspaces to domains (Fabric Admin API)
    * More efficient than individual calls for bulk operations
    */
-  public batchAssignWorkspacesToDomains(assignments: Array<{workspaceId: string, domainId: string}>): Observable<any> {
+  public batchAssignWorkspacesToDomains (assignments: Array<{workspaceId: string, domainId: string}>): Observable<any> {
     const apiUrl: string = this.getEnvironment().apiUrl;
-    
+
     // Note: If Fabric doesn't support batch, we'll need to use forkJoin for parallel calls
     // For now, implementing as sequential with Observable.concat for reliability
-    const observables = assignments.map(assignment => 
+    const observables = assignments.map(assignment =>
       this.httpService.post(
         `https://${apiUrl}/v1.0/myorg/admin/workspaces/${assignment.workspaceId}/assignToDomain`,
         { domainId: assignment.domainId },
@@ -97,7 +97,7 @@ export class HomeProxy {
         }
       )
     );
-    
+
     return forkJoin(observables.length > 0 ? observables : [of(null)]);
   }
 

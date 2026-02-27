@@ -1,0 +1,162 @@
+{
+  "tasks": [
+    {
+      "id": "domains-api",
+      "title": "Add Domains API to HomeProxy",
+      "description": "Add GET /v1/admin/domains endpoint to HomeProxy service. In demo mode, return MOCK_DOMAINS. In real mode, call the Fabric REST API. Add getDomains() method. Wire it into the component to resolve domainId → domain name from the API response instead of hardcoded lookup.",
+      "priority": 1,
+      "status": "pending",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "HomeProxy has getDomains() method calling GET https://api.fabric.microsoft.com/v1/admin/domains",
+        "Demo mode returns MOCK_DOMAINS without HTTP call",
+        "npm run build passes",
+        "E2E tests pass"
+      ],
+      "files": ["src/app/home/services/home-proxy.service.ts", "src/app/home/components/home-container/home-container.component.ts"]
+    },
+    {
+      "id": "items-api",
+      "title": "Add Fabric Items API for Notebooks, Pipelines",
+      "description": "Add GET /v1/admin/items endpoint to HomeProxy service. This returns Fabric-native items (Notebooks, Pipelines, Eventstreams, KQL Databases, etc.) that the Scanner API doesn't cover. Create mock items for data science and data factory workspaces. Wire into loadLineage() to create nodes for these items.",
+      "priority": 2,
+      "status": "pending",
+      "dependsOn": ["domains-api"],
+      "acceptanceCriteria": [
+        "HomeProxy has getItems() method calling GET https://api.fabric.microsoft.com/v1/admin/items",
+        "Mock data includes notebook and pipeline items in relevant workspaces",
+        "New items appear as nodes in the graph",
+        "npm run build passes",
+        "E2E tests pass"
+      ],
+      "files": ["src/app/home/services/home-proxy.service.ts", "src/app/home/data/scanner-mock-data.ts", "src/app/home/components/home-container/home-container.component.ts"]
+    },
+    {
+      "id": "side-panel",
+      "title": "Side panel detail view",
+      "description": "Add a slide-out side panel that appears when a node is clicked. Shows full metadata: for workspaces (domain, capacity state, artifact counts), for artifacts (endorsement, sensitivity label, upstream/downstream dependencies, configured by, description). The panel should not replace the zoom behavior — instead use a different interaction (e.g., right-click or double-click, or a button in the tooltip).",
+      "priority": 3,
+      "status": "pending",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Clicking a node opens a side panel with metadata",
+        "Panel shows different content for workspace vs artifact nodes",
+        "Panel can be closed",
+        "Panel doesn't break existing graph interactions",
+        "npm run build passes",
+        "E2E tests pass"
+      ],
+      "files": ["src/app/home/components/home-container/home-container.component.ts", "src/app/home/components/home-container/home-container.component.html", "src/app/home/components/home-container/home-container.component.scss"]
+    },
+    {
+      "id": "legend-panel",
+      "title": "Legend panel with color/icon reference",
+      "description": "Add a floating legend panel showing what each node color and icon represents. Should be always visible when graph is shown, toggleable via toolbar button. Dynamically shows only artifact types present in the current view. Uses the same colors from getNodeColor().",
+      "priority": 4,
+      "status": "pending",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Legend panel visible with node type colors and labels",
+        "Only shows types present in current graph",
+        "Can be toggled on/off",
+        "npm run build passes",
+        "E2E tests pass"
+      ],
+      "files": ["src/app/home/components/home-container/home-container.component.ts", "src/app/home/components/home-container/home-container.component.html", "src/app/home/components/home-container/home-container.component.scss"]
+    },
+    {
+      "id": "search-highlight",
+      "title": "Search and highlight matching nodes",
+      "description": "Enhance the existing search box to highlight matching nodes in the graph instead of just filtering. Type a name → matching nodes glow or enlarge, non-matching nodes dim. Clear search to restore. Use the existing searchTerm binding.",
+      "priority": 5,
+      "status": "pending",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Typing in search highlights matching nodes visually",
+        "Non-matching nodes are dimmed",
+        "Clearing search restores all nodes",
+        "npm run build passes",
+        "E2E tests pass"
+      ],
+      "files": ["src/app/home/components/home-container/home-container.component.ts"]
+    },
+    {
+      "id": "impact-analysis",
+      "title": "Impact analysis — downstream dependency highlighting",
+      "description": "Add impact analysis feature: when a node is selected (via side panel or context menu), highlight all downstream dependents in the graph. Show count of affected items. This traces through the lineage links to find everything that depends on the selected artifact.",
+      "priority": 6,
+      "status": "pending",
+      "dependsOn": ["side-panel"],
+      "acceptanceCriteria": [
+        "Can trigger impact analysis from a selected node",
+        "All downstream dependents are visually highlighted",
+        "Count of affected items is displayed",
+        "npm run build passes",
+        "E2E tests pass"
+      ],
+      "files": ["src/app/home/components/home-container/home-container.component.ts"]
+    },
+    {
+      "id": "endorsement-dashboard",
+      "title": "Endorsement coverage statistics",
+      "description": "Add an endorsement stats overlay or panel showing: % of artifacts Certified vs Promoted vs None. Break down by domain. Use the endorsementDetails already stored on nodes. Display as a small bar chart or stats panel accessible from the toolbar.",
+      "priority": 7,
+      "status": "pending",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Stats panel shows certification/promotion/none percentages",
+        "Breakdown by domain available",
+        "Accessible from toolbar",
+        "npm run build passes",
+        "E2E tests pass"
+      ],
+      "files": ["src/app/home/components/home-container/home-container.component.ts", "src/app/home/components/home-container/home-container.component.html"]
+    },
+    {
+      "id": "sensitivity-compliance",
+      "title": "Sensitivity label compliance view",
+      "description": "Add a compliance view showing which artifacts are missing sensitivity labels. Flag workspaces or domains where label coverage is below a threshold. Display as a badge or warning in the toolbar area.",
+      "priority": 8,
+      "status": "pending",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Shows count of artifacts missing sensitivity labels",
+        "Can filter to show only unlabeled artifacts",
+        "npm run build passes",
+        "E2E tests pass"
+      ],
+      "files": ["src/app/home/components/home-container/home-container.component.ts", "src/app/home/components/home-container/home-container.component.html"]
+    },
+    {
+      "id": "readme-overhaul",
+      "title": "README overhaul for public audience",
+      "description": "Rewrite README.md for a public audience: clear 'what is this' section, quick start for both demo and real mode, architecture diagram in text, Scanner API compatibility notes, screenshots placeholder sections, contributing guide reference.",
+      "priority": 9,
+      "status": "pending",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "README has clear project description",
+        "Quick start section for demo mode",
+        "Architecture overview section",
+        "Scanner API compatibility notes",
+        "npm run build passes"
+      ],
+      "files": ["README.md"]
+    },
+    {
+      "id": "ghpages-polish",
+      "title": "GitHub Pages demo polish",
+      "description": "Verify and fix the GitHub Pages deployment. Ensure demo mode works on the deployed site. Check that all assets load correctly with the base-href /FabricBEyeAI/. Run npm run docs and verify the output in docs/ folder.",
+      "priority": 10,
+      "status": "pending",
+      "dependsOn": ["readme-overhaul"],
+      "acceptanceCriteria": [
+        "npm run docs builds successfully",
+        "docs/ folder contains working app",
+        "Demo mode works with base-href /FabricBEyeAI/",
+        "npm run build passes"
+      ],
+      "files": ["angular.json", "package.json"]
+    }
+  ]
+}
