@@ -1206,14 +1206,14 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       .height(window.innerHeight)
       .backgroundColor('#1b1a19')
       .enableNodeDrag(false)
-      .nodeRelSize(6)
+      .nodeRelSize(4)
       // Pre-compute layout so the graph appears settled (critical for big tenants)
       .warmupTicks(visibleNodes.length > 200 ? 100 : 50)
       .cooldownTicks(visibleNodes.length > 200 ? 200 : 300)
       .d3AlphaDecay(0.05) // Fast settling — stops oscillation quickly
       .d3VelocityDecay(0.6) // High friction to prevent shaking
       .nodeVal((node: any) => {
-        return node.type === NodeType.Workspace ? 12 : 3;
+        return node.type === NodeType.Workspace ? 8 : 2;
       })
       .d3Force('domainCluster', this.createDomainClusterForce())
       .linkOpacity(1.0) // Full opacity - we control it in linkColor
@@ -1561,9 +1561,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     const linkForce = graph.d3Force('link');
     if (linkForce) {
       linkForce.distance((link: any) => {
-        if (link.type === LinkType.CrossWorkspace) return 120;
-        if (link.type === LinkType.Contains) return 25;
-        return 40; // artifact lineage
+        if (link.type === LinkType.CrossWorkspace) return 80;
+        if (link.type === LinkType.Contains) return 20;
+        return 35; // artifact lineage
       });
     }
 
@@ -1686,7 +1686,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           maxDistance = Math.max(maxDistance, distance);
         });
 
-        const radius = maxDistance * 1.5; // Add 50% padding
+        // Scale radius based on node count — small domains get small spheres
+        const baseRadius = Math.max(maxDistance * 1.1, 20);
+        const radius = Math.min(baseRadius, 40 + nodes.length * 8);
 
         // Create transparent sphere
         const geometry = new THREE.SphereGeometry(radius, 32, 32);
@@ -1715,7 +1717,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           const labelGroup = new THREE.Group();
           const label = new SpriteText(domain.name);
           label.color = 'rgba(255,255,255,0.6)';
-          label.textHeight = 6;
+          label.textHeight = 4;
           label.backgroundColor = 'rgba(20,20,20,0.7)';
           label.padding = 4;
           label.borderRadius = 4;
@@ -2803,7 +2805,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           const dy = a.y - b.y;
           const dz = a.z - b.z;
           const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-          const minDist = 200; // Moderate separation between domains
+          const minDist = 180; // Balanced domain separation
           if (dist < minDist) {
             const force = (minDist - dist) / dist * domainRepulsion;
             const fa = domainForces.get(domainIds[i])!;
