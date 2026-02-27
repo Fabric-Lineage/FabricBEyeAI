@@ -16,13 +16,13 @@ test.describe('Graph Links', () => {
     expect(box!.width).toBeGreaterThan(200);
   });
 
-  test('should show Focus Mode button for domain isolation', async ({ page }) => {
-    const focusBtn = page.locator('button.control-btn', { hasText: 'Focus Mode' });
+  test('should show Focus button for domain isolation', async ({ page }) => {
+    const focusBtn = page.locator('button.control-btn', { hasText: 'Focus' });
     await expect(focusBtn).toBeVisible();
   });
 
-  test('should show link curvature toggle', async ({ page }) => {
-    const curveBtn = page.locator('button.control-btn', { hasText: /Straight|Curved/ });
-    await expect(curveBtn).toBeVisible();
+  test('should show lineage view toggle', async ({ page }) => {
+    const lineageBtn = page.locator('button.control-btn', { hasText: 'Lineage' });
+    await expect(lineageBtn).toBeVisible();
   });
 });

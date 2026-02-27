@@ -14,15 +14,13 @@ test.describe('Sensitivity Labels', () => {
     await expect(canvas).toBeVisible();
   });
 
-  test('should show Show Unassigned button with badge', async ({ page }) => {
-    const unassignedBtn = page.locator('button.control-btn', { hasText: /Show Unassigned|Hide Unassigned/ });
-    await expect(unassignedBtn).toBeVisible();
+  test('should show Labels button with badge', async ({ page }) => {
+    const labelsBtn = page.locator('button.control-btn', { hasText: 'Labels' });
+    await expect(labelsBtn).toBeVisible();
   });
 
   test('should have toolbar buttons for graph interaction', async ({ page }) => {
-    // Verify all critical toolbar buttons exist
     await expect(page.locator('button.control-btn', { hasText: 'Fit' })).toBeVisible();
-    await expect(page.locator('button.control-btn', { hasText: /Fog|No Fog/ })).toBeVisible();
     await expect(page.locator('button.control-btn', { hasText: 'Filters' })).toBeVisible();
   });
 });

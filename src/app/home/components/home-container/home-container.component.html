@@ -1,6 +1,6 @@
 <section class="container" [ngClass]="{'details': !shouldShowGraph}">
     <div class="scanDetails"  *ngIf="!shouldShowGraph">
-      <p class="title">Use FabricBEyeAI to generate a 3D visualization of Microsoft Fabric workspaces and their connections.</p>
+      <p class="title">Use FabricBEye to generate a 3D visualization of Microsoft Fabric workspaces and their connections.</p>
       <p class="subTitle">Visualize lineage across Semantic Models, Lakehouses, Dataflows, and Reports in your Fabric tenant.</p>
       <div class="buttonContainer">
         <div class="scanButton" (click)="startScan()">
@@ -19,77 +19,63 @@
     
     <!-- Graph Controls Toolbar -->
     <div class="graph-controls" *ngIf="shouldShowGraph">
+      <!-- Search -->
       <input 
         type="text" 
         class="search-input" 
-        placeholder="🔍 Search workspaces, artifacts..."
+        placeholder="Search workspaces, artifacts..."
         [(ngModel)]="searchTerm"
         (input)="onSearchChange()"
       />
+
+      <div class="toolbar-divider"></div>
       
-      <button class="control-btn" (click)="toggleSimulation()" [title]="simulationPaused ? 'Resume simulation' : 'Pause simulation'">
-        <span>{{ simulationPaused ? '▶️' : '⏸️' }}</span> {{ simulationPaused ? 'Resume' : 'Pause' }}
-      </button>
-      
-      <button class="control-btn" (click)="toggleLinkCurvature()" title="Toggle curved links">
-        <span>〰️</span> {{ linkCurvature > 0 ? 'Straight' : 'Curved' }}
-      </button>
-      
-      <button class="control-btn" (click)="toggleFog()" title="Toggle depth fog">
-        <span>🌫️</span> {{ fogEnabled ? 'No Fog' : 'Fog' }}
-      </button>
-      
-      <button class="control-btn" (click)="zoomToFit()" title="Fit all domains to view">
+      <!-- Navigation -->
+      <button class="control-btn" (click)="zoomToFit()" title="Fit all to view (R)">
         <span>📐</span> Fit
       </button>
       
       <button class="control-btn" (click)="isolateMode = !isolateMode; updateIsolationMode()" 
-              [class.active]="isolateMode" title="Click domains to isolate">
-        <span>🎯</span> {{ isolateMode ? 'Exit Focus' : 'Focus Mode' }}
+              [class.active]="isolateMode" title="Click workspace to isolate domain">
+        <span>🎯</span> Focus
       </button>
       
-      <button class="control-btn" (click)="toggleUnassignedOnly()" 
-              [class.active]="showUnassignedOnly" 
-              title="Manage unassigned workspaces">
-        <span>🏷️</span> Manage Unassigned
-        <span class="badge" *ngIf="unassignedCount > 0" [class.warning]="unassignedCount > 0">
-          {{ unassignedCount }}
-        </span>
-      </button>
-      
-      <button class="control-btn" (click)="toggleShowUnassignedWorkspaces()" 
-              [class.active]="showUnassignedWorkspaces" 
-              title="Show/hide unassigned workspaces in graph">
-        <span>{{ showUnassignedWorkspaces ? '👁️' : '👁️‍🗨️' }}</span> 
-        {{ showUnassignedWorkspaces ? 'Hide' : 'Show' }} Unassigned
-      </button>
-      
-      <button class="control-btn" (click)="toggleFilterPanel()" title="Show filters">
-        <span>🎛️</span> Filters
+      <button class="control-btn" (click)="toggleLegendPanel()" [class.active]="showLegendPanel" title="Legend & domain navigator (L)">
+        <span>🗺️</span> Map
       </button>
 
-      <button class="control-btn" (click)="toggleLegendPanel()" [class.active]="showLegendPanel" title="Show/hide legend">
-        <span>🗺️</span> Legend
+      <div class="toolbar-divider"></div>
+
+      <!-- Governance -->
+      <button class="control-btn" (click)="toggleCrossWorkspaceView()"
+              [class.active]="crossWorkspaceViewActive" title="Cross-workspace data flow">
+        <span>🔗</span> Lineage
       </button>
 
-      <button class="control-btn" (click)="showEndorsementPanel = !showEndorsementPanel" [class.active]="showEndorsementPanel" title="Endorsement stats">
+      <button class="control-btn" (click)="showEndorsementPanel = !showEndorsementPanel" [class.active]="showEndorsementPanel" title="Endorsement coverage">
         <span>🏅</span> Trust
       </button>
 
-      <button class="control-btn" (click)="toggleCrossWorkspaceView()"
-              [class.active]="crossWorkspaceViewActive" title="Show only cross-workspace data flow">
-        <span>🔗</span> Data Flow
-      </button>
-
       <button class="control-btn" (click)="toggleSensitivityCompliance()" 
-              [class.active]="showSensitivityCompliance" title="Show unlabeled artifacts">
-        <span>🛡️</span> Compliance
+              [class.active]="showSensitivityCompliance" title="Unlabeled artifacts">
+        <span>🛡️</span> Labels
         <span class="badge warning" *ngIf="getSensitivityStats().unlabeled > 0">
           {{ getSensitivityStats().unlabeled }}
         </span>
       </button>
-      
-      <button class="control-btn" (click)="exportToPNG()" title="Export as PNG">
+
+      <div class="toolbar-divider"></div>
+
+      <!-- Tools -->
+      <button class="control-btn" (click)="toggleFilterPanel()" title="Domain & artifact filters">
+        <span>🎛️</span> Filters
+      </button>
+
+      <button class="control-btn icon-only" (click)="toggleSimulation()" [title]="simulationPaused ? 'Resume layout' : 'Pause layout'">
+        <span>{{ simulationPaused ? '▶️' : '⏸️' }}</span>
+      </button>
+
+      <button class="control-btn icon-only" (click)="exportToPNG()" title="Export as PNG">
         <span>📷</span>
       </button>
     </div>

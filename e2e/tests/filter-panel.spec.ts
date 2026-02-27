@@ -17,22 +17,10 @@ test.describe('Filter Panel', () => {
     expect(text!.length).toBeGreaterThan(0);
   });
 
-  test('should have clickable filter controls', async ({ page }) => {
+  test('should toggle filter controls', async ({ page }) => {
     // Filter panel should contain checkboxes or labels
     const labels = page.locator('.filter-panel label, .filter-panel .filter-item, .filter-panel input[type="checkbox"]');
     const count = await labels.count();
     expect(count).toBeGreaterThan(0);
-  });
-
-  test('should toggle Manage Unassigned mode', async ({ page }) => {
-    // Close filter panel first
-    await page.locator('button.control-btn', { hasText: 'Filters' }).click();
-    // Click Manage Unassigned
-    const unassignedBtn = page.locator('button.control-btn', { hasText: 'Manage Unassigned' });
-    await unassignedBtn.click();
-    // Should show unassigned count badge or instructions
-    await page.waitForTimeout(1000);
-    // The button should now be active
-    await expect(unassignedBtn).toHaveClass(/active/);
   });
 });

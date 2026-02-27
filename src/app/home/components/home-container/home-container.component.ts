@@ -560,72 +560,60 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
    * @returns Hex color string
    */
   public getNodeColor (nodeType: NodeType): string {
-    // Official Microsoft Fabric product icon colors
+    // Microsoft Fabric workload family colors
+    // Each artifact belongs to a workload — same workload = same color family
     switch (nodeType) {
-      case NodeType.Workspace: {
-        return '#107C10'; // Fabric Green
-      }
-      case NodeType.Dashboard: {
-        return '#E8740C'; // Fabric Dashboard orange
-      }
-      case NodeType.Report: {
-        return '#F2C811'; // Power BI Report gold
-      }
-      case NodeType.PaginatedReport: {
-        return '#CA5010'; // Paginated Report burnt orange
-      }
-      case NodeType.SemanticModel: {
-        return '#1A6DD4'; // Fabric Semantic Model blue
-      }
+      // ── Workspace ──
+      case NodeType.Workspace:
+        return '#117865'; // Teal-green — neutral, distinct from all workloads
+
+      // ── Power BI family (Gold) ──
+      case NodeType.Report:
+      case NodeType.PaginatedReport:
+        return '#F2C811';
+      case NodeType.Dashboard:
+        return '#E8A00E';
+      case NodeType.SemanticModel:
+        return '#D4920A';
+
+      // ── Data Engineering family (Blue) ──
+      case NodeType.Lakehouse:
+      case NodeType.SQLAnalyticsEndpoint:
+        return '#0B6EF6';
+      case NodeType.Notebook:
+      case NodeType.SparkJobDefinition:
+        return '#3A8FF7';
+
+      // ── Data Factory family (Teal) ──
+      case NodeType.Pipeline:
+        return '#00BEBE';
       case NodeType.Dataflow:
-      case NodeType.DataflowGen2: {
-        return '#4CAF50'; // Dataflow green
-      }
-      case NodeType.Lakehouse: {
-        return '#00B7C3'; // Fabric Data Engineering teal
-      }
-      case NodeType.DataWarehouse: {
-        return '#005BA1'; // Data Warehouse deep blue
-      }
-      case NodeType.SQLAnalyticsEndpoint: {
-        return '#005BA1'; // SQL Endpoint (same as warehouse)
-      }
-      case NodeType.Notebook: {
-        return '#D83B01'; // Spark Notebook orange-red
-      }
-      case NodeType.SparkJobDefinition: {
-        return '#D83B01'; // Spark family orange-red
-      }
-      case NodeType.Pipeline: {
-        return '#8661C5'; // Fabric Data Factory purple
-      }
-      case NodeType.Eventstream: {
-        return '#008575'; // Real-Time Intelligence teal-green
-      }
-      case NodeType.Eventhouse: {
-        return '#008575'; // Real-Time Intelligence teal-green
-      }
-      case NodeType.KQLDatabase: {
-        return '#0078D4'; // Kusto blue
-      }
-      case NodeType.KQLQueryset: {
-        return '#0078D4'; // Kusto blue
-      }
-      case NodeType.Datamart: {
-        return '#8661C5'; // Datamart purple
-      }
-      case NodeType.MLModel: {
-        return '#742774'; // AI/ML purple
-      }
-      case NodeType.MLExperiment: {
-        return '#742774'; // AI/ML purple
-      }
-      case NodeType.App: {
-        return '#737373'; // App gray
-      }
-      default: {
-        return '#107C10'; // Fabric green
-      }
+      case NodeType.DataflowGen2:
+        return '#00A4A4';
+
+      // ── Data Warehouse family (Deep Blue) ──
+      case NodeType.DataWarehouse:
+      case NodeType.Datamart:
+        return '#2E5FBE';
+
+      // ── Real-Time Intelligence family (Purple) ──
+      case NodeType.Eventstream:
+      case NodeType.Eventhouse:
+        return '#8661C5';
+      case NodeType.KQLDatabase:
+      case NodeType.KQLQueryset:
+        return '#7550B0';
+
+      // ── Data Science family (Green) ──
+      case NodeType.MLModel:
+      case NodeType.MLExperiment:
+        return '#107C10';
+
+      // ── Other ──
+      case NodeType.App:
+        return '#737373';
+      default:
+        return '#888888';
     }
   }
 
@@ -1264,7 +1252,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     graph.graphData(gData)
       .width(window.innerWidth)
       .height(window.innerHeight)
-      .backgroundColor('#0a0e27')
+      .backgroundColor('#1b1a19')
       .enableNodeDrag(false)
       .nodeRelSize(8)
       // Pre-compute layout so the graph appears settled (critical for big tenants)
@@ -1539,28 +1527,23 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         return this.getNodeColor(node.type as NodeType);
       })
       .linkColor((link: any) => {
-        const color = (() => {
-          // Highlight active links with bright colors
-          if (this.highlightLinks.size > 0) {
-            if (this.highlightLinks.has(link)) {
-              if (link.type === LinkType.CrossWorkspace) return COLOR_ARROW_CROSS_WS;
-              if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.6)';
-              return 'rgba(200,200,200,0.8)';
-            }
-            return 'rgba(100,100,100,0.05)';
+        if (this.highlightLinks.size > 0) {
+          if (this.highlightLinks.has(link)) {
+            if (link.type === LinkType.CrossWorkspace) return COLOR_ARROW_CROSS_WS;
+            if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.7)';
+            return 'rgba(200,200,200,0.8)';
           }
-          // Cross-workspace = hero links (bright cyan, high visibility)
-          if (link.type === LinkType.CrossWorkspace) return 'rgba(0,188,242,0.7)';
-          // Contains = subtle structural links (low-key, not distracting)
-          if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.08)';
-          return 'rgba(150,150,150,0.15)';
-        })();
-
-        return color;
+          return 'rgba(100,100,100,0.05)';
+        }
+        // Cross-workspace: bright cyan — the data flow story
+        if (link.type === LinkType.CrossWorkspace) return 'rgba(0,188,242,0.8)';
+        // Contains: visible white — the structural connections
+        if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.25)';
+        return 'rgba(150,150,150,0.2)';
       })
       .linkWidth((link: any) => {
         if (link.type === LinkType.CrossWorkspace) return 2.5;
-        if (link.type === LinkType.Contains) return 0.5;
+        if (link.type === LinkType.Contains) return 1;
         return 0.5;
       })
       .onBackgroundClick(() => {
@@ -1574,11 +1557,16 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         if (this.showSidePanel) {
           this.closeSidePanel();
         }
-      })
-      .onEngineStop(() => {
-        // After layout settles, zoom to fit the whole world
-        graph.zoomToFit(800, 40);
       });
+
+    // Zoom to fit once after initial layout settles
+    let initialZoomDone = false;
+    graph.onEngineStop(() => {
+      if (!initialZoomDone) {
+        initialZoomDone = true;
+        graph.zoomToFit(800, 40);
+      }
+    });
 
     this.shouldShowGraph = true;
 
@@ -2098,17 +2086,18 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           if (this.highlightLinks.size > 0) {
             if (this.highlightLinks.has(link)) {
               if (link.type === LinkType.CrossWorkspace) return COLOR_ARROW_CROSS_WS;
-              if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.6)';
+              if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.7)';
               return 'rgba(200,200,200,0.8)';
             }
             return 'rgba(100,100,100,0.05)';
           }
-          if (link.type === LinkType.CrossWorkspace) return 'rgba(0,188,242,0.7)';
-          if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.08)';
-          return 'rgba(150,150,150,0.15)';
+          if (link.type === LinkType.CrossWorkspace) return 'rgba(0,188,242,0.8)';
+          if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.25)';
+          return 'rgba(150,150,150,0.2)';
         })
         .linkWidth((link: any) => {
           if (link.type === LinkType.CrossWorkspace) return 2.5;
+          if (link.type === LinkType.Contains) return 1;
           return 0.5;
         });
     }

@@ -14,7 +14,7 @@ test.describe('App Loads', () => {
 
   test('should show the title text', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('.title')).toContainText('FabricBEyeAI');
+    await expect(page.locator('.title')).toContainText('FabricBEye');
   });
 
   test('should have no console errors on load', async ({ page }) => {
