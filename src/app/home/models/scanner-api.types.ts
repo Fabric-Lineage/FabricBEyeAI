@@ -18,17 +18,17 @@ export interface WorkspaceInfo {
   capacityId?: string;
   defaultDatasetStorageFormat?: string;
   description?: string;
-  
+
   // Domain assignment (added in Fabric)
   domainId?: string;
-  
+
   // Artifact arrays
   reports: WorkspaceInfoReport[];
   dashboards: WorkspaceInfoDashboard[];
   datasets: WorkspaceInfoDataset[];
   dataflows: WorkspaceInfoDataflow[];
   datamarts: WorkspaceInfoDatamart[];
-  
+
   // Users with access
   users: GroupUser[];
 }
@@ -104,7 +104,6 @@ export interface WorkspaceInfoDataflow {
   datasourceUsages?: DatasourceUsage[];
   misconfiguredDatasourceUsages?: DatasourceUsage[];
   upstreamDataflows?: DependentDataflow[];
-  upstreamDatamarts?: DependentDatamart[];
   users: DataflowUser[];
   tags?: string[];
 }

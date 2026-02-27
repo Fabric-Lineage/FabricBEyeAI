@@ -1,6 +1,10 @@
 /**
  * Comprehensive Mock Data matching Microsoft Fabric Scanner API format
- * Simulates an enterprise tenant with 15 domains, 100 workspaces, 1000+ artifacts
+ * Simulates an enterprise tenant with 16 domains, 50 workspaces, and hundreds of artifacts.
+ *
+ * NOTE: The real Scanner API returns `tags` as arrays of label GUIDs (e.g., ["3b4b36a5-..."]).
+ * This mock uses human-readable strings (e.g., ['crm', 'salesforce']) for demo clarity.
+ * Sensitivity labels use GUID-format IDs to match real API behavior.
  */
 
 import { WorkspaceInfoResponse, Domain, WorkspaceInfo } from '../models/scanner-api.types';
@@ -9,32 +13,32 @@ import { WorkspaceInfoResponse, Domain, WorkspaceInfo } from '../models/scanner-
 export const MOCK_DOMAINS: Domain[] = [
   // Special staging domain for unassigned workspaces
   { id: 'UNASSIGNED', name: '⚠️ Unassigned Workspaces', description: 'Workspaces awaiting domain assignment', workspaceIds: [] },
-  
+
   // Top-level business domains
   { id: 'dom-sales', name: 'Sales & Revenue', description: 'Sales operations and revenue analytics', workspaceIds: [] },
   { id: 'dom-sales-na', name: 'Sales North America', description: 'North American sales division', parentDomainId: 'dom-sales', workspaceIds: [] },
   { id: 'dom-sales-emea', name: 'Sales EMEA', description: 'Europe, Middle East & Africa sales', parentDomainId: 'dom-sales', workspaceIds: [] },
-  
+
   { id: 'dom-finance', name: 'Finance & Accounting', description: 'Financial reporting and analysis', workspaceIds: [] },
   { id: 'dom-finance-fp', name: 'Financial Planning', description: 'FP&A and budgeting', parentDomainId: 'dom-finance', workspaceIds: [] },
-  
+
   { id: 'dom-hr', name: 'Human Resources', description: 'HR analytics and workforce management', workspaceIds: [] },
-  
+
   { id: 'dom-marketing', name: 'Marketing & Customer', description: 'Marketing campaigns and customer analytics', workspaceIds: [] },
   { id: 'dom-marketing-digital', name: 'Digital Marketing', description: 'Online campaigns and social media', parentDomainId: 'dom-marketing', workspaceIds: [] },
-  
+
   { id: 'dom-supply', name: 'Supply Chain', description: 'Supply chain and logistics', workspaceIds: [] },
-  
+
   { id: 'dom-manufacturing', name: 'Manufacturing & Operations', description: 'Production and operational efficiency', workspaceIds: [] },
-  
+
   { id: 'dom-it', name: 'IT & Infrastructure', description: 'IT services and infrastructure monitoring', workspaceIds: [] },
-  
+
   { id: 'dom-datascience', name: 'Data Science & AI', description: 'ML models and AI experiments', workspaceIds: [] },
-  
+
   { id: 'dom-executive', name: 'Executive Leadership', description: 'C-suite executive dashboards', workspaceIds: [] },
-  
+
   { id: 'dom-compliance', name: 'Compliance & Risk', description: 'Regulatory compliance and risk management', workspaceIds: [] },
-  
+
   { id: 'dom-customer', name: 'Customer Support', description: 'Customer service and support analytics', workspaceIds: [] }
 ];
 
@@ -63,7 +67,7 @@ const MOCK_USERS = {
 
 /**
  * Microsoft Fabric Scanner API Mock Data
- * 
+ *
  * Pre-generates all artifact IDs to ensure consistent relationships across mock data.
  * This prevents ID collisions and ensures all artifacts have stable, predictable IDs
  * for cross-workspace references and SQL endpoints.
@@ -73,80 +77,80 @@ const ArtifactIds = {
   dataflow_salesforce_crm: generateArtifactId(),
   dataflow_sap_erp: generateArtifactId(),
   lakehouse_sales_bronze: generateArtifactId(),
-  
+
   // Workspace 2 - Sales Data Transformation
   dataflow_sales_cleansing: generateArtifactId(),
   lakehouse_sales_silver: generateArtifactId(),
-  
+
   // Workspace 3 - Sales Analytics & Reporting
   report_sales_performance: generateArtifactId(),
   report_territory_analysis: generateArtifactId(),
   report_sales_forecast: generateArtifactId(),
   dashboard_executive_sales: generateArtifactId(),
   dataset_sales_analytics: generateArtifactId(),
-  
+
   // Workspace 4 - Finance General Ledger
   report_finance_monthly_statements: generateArtifactId(),
   report_finance_balance_sheet: generateArtifactId(),
   dataset_finance_general_ledger: generateArtifactId(),
   dataflow_finance_sap: generateArtifactId(),
   datamart_finance_warehouse: generateArtifactId(),
-  
+
   // Workspace 5 - Finance FP&A
   report_finance_budget_vs_actuals: generateArtifactId(),
   report_finance_aop: generateArtifactId(),
   dataset_finance_fpa_planning: generateArtifactId(),
-  
+
   // Workspace 6 - HR Workforce Analytics
   report_hr_headcount: generateArtifactId(),
   report_hr_attrition: generateArtifactId(),
   dashboard_hr_executive: generateArtifactId(),
   dataset_hr_analytics: generateArtifactId(),
   dataflow_hr_workday: generateArtifactId(),
-  
+
   // Workspace 7 - Marketing Campaign Analytics
   report_marketing_campaign_roi: generateArtifactId(),
   report_marketing_customer_journey: generateArtifactId(),
   dataset_marketing_analytics: generateArtifactId(),
   dataflow_marketing_google_analytics: generateArtifactId(),
-  
+
   // Workspace 8 - Marketing Digital & Social
   report_marketing_social_media: generateArtifactId(),
   dataset_marketing_social_media: generateArtifactId(),
-  
+
   // Workspace 9 - Supply Chain Logistics (using named IDs)
-  
+
   // Workspace 10 - Manufacturing IoT
   report_manufacturing_equipment: generateArtifactId(),
   dataset_manufacturing_operations: generateArtifactId(),
   datamart_manufacturing_iot_eventhouse: generateArtifactId(),
-  
+
   // Workspace 11 - Data Science ML Models
   report_datascience_model_performance: generateArtifactId(),
   dataset_datascience_ml_experiments: generateArtifactId(),
-  
+
   // Workspace 12 - Executive C-Suite
   report_executive_ceo: generateArtifactId(),
   report_executive_cfo: generateArtifactId(),
   dashboard_executive_scorecard: generateArtifactId(),
   dataset_executive_performance: generateArtifactId(),
-  
+
   // Workspace 13 - Compliance Risk Management
   report_compliance_audit_trail: generateArtifactId(),
   dataset_compliance_model: generateArtifactId(),
-  
+
   // Workspace 14 - IT Infrastructure
   report_it_system_health: generateArtifactId(),
   dataset_it_operations: generateArtifactId(),
-  
+
   // Workspace 15 - Customer Support
   report_support_ticket_analysis: generateArtifactId(),
   dataset_support_analytics: generateArtifactId(),
-  
+
   // Additional Enterprise Lakehouses (late in workspace list)
   lakehouse_enterprise_bronze: generateArtifactId(),
   lakehouse_enterprise_gold: generateArtifactId(),
-  warehouse_enterprise_data: generateArtifactId(),
+  warehouse_enterprise_data: generateArtifactId()
 };
 
 export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
@@ -159,7 +163,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       state: 'Active',
       isOnDedicatedCapacity: false,
       capacityId: null,
-      domainId: null,  // UNASSIGNED
+      domainId: null, // UNASSIGNED
       description: 'Old reports that need to be organized into a domain',
       reports: [],
       dashboards: [],
@@ -175,7 +179,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       state: 'Active',
       isOnDedicatedCapacity: false,
       capacityId: null,
-      domainId: null,  // UNASSIGNED
+      domainId: null, // UNASSIGNED
       description: 'Temporary workspace for ad-hoc analysis',
       reports: [],
       dashboards: [],
@@ -191,7 +195,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       state: 'Active',
       isOnDedicatedCapacity: false,
       capacityId: null,
-      domainId: null,  // UNASSIGNED
+      domainId: null, // UNASSIGNED
       description: 'Data sources awaiting classification',
       reports: [],
       dashboards: [],
@@ -207,7 +211,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       state: 'Active',
       isOnDedicatedCapacity: false,
       capacityId: null,
-      domainId: null,  // UNASSIGNED
+      domainId: null, // UNASSIGNED
       description: 'Development and testing workspace',
       reports: [],
       dashboards: [],
@@ -223,7 +227,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       state: 'Active',
       isOnDedicatedCapacity: false,
       capacityId: null,
-      domainId: null,  // UNASSIGNED
+      domainId: null, // UNASSIGNED
       description: 'Old workspaces to be archived or reassigned',
       reports: [],
       dashboards: [],
@@ -313,7 +317,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           modifiedDateTime: '2026-01-29T10:00:00Z',
           endorsementDetails: { endorsement: 'Promoted' },
           sensitivityLabel: { labelId: SENSITIVITY_LABELS.INTERNAL },
-          upstreamDatamarts: [{ targetDatamartId: ArtifactIds.lakehouse_sales_bronze, groupId: 'ws-0006' }],
+          upstreamDataflows: [{ targetDataflowId: ArtifactIds.dataflow_salesforce_crm, groupId: 'ws-0006' }],
           users: [],
           tags: ['silver', 'cleansing']
         }
@@ -577,7 +581,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
           targetStorageMode: 'DirectQuery',
           endorsementDetails: { endorsement: 'Promoted' },
           sensitivityLabel: { labelId: SENSITIVITY_LABELS.CONFIDENTIAL },
-          upstreamDatamarts: [{ targetDatamartId: ArtifactIds.datamart_finance_warehouse, groupId: 'ws-0004' }],
+          upstreamDatamarts: [{ targetDatamartId: ArtifactIds.datamart_finance_warehouse, groupId: 'ws-0009' }],
           tables: [
             { name: 'FactBudget', columns: [{ name: 'BudgetID', dataType: 'Int64' }, { name: 'Amount', dataType: 'Decimal' }] }
           ],
@@ -1291,7 +1295,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
             { name: 'FactSales', columns: [{ name: 'SaleID', dataType: 'Int64' }] },
             { name: 'DimTerritory', columns: [{ name: 'TerritoryID', dataType: 'String' }] }
           ],
-          upstreamDatasets: [{ targetDatasetId: ArtifactIds.dataflow_salesforce_crm, groupId: 'ws-sales-na' }],
+          upstreamDatasets: [{ targetDatasetId: ArtifactIds.dataset_sales_analytics, groupId: 'ws-0008' }],
           users: [],
           tags: ['sales', 'crm']
         }
@@ -1356,7 +1360,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
             { name: 'FactCustomerBehavior', columns: [{ name: 'CustomerID', dataType: 'String' }] },
             { name: 'DimSegment', columns: [{ name: 'SegmentID', dataType: 'Int64' }] }
           ],
-          upstreamDatamarts: [{ targetDatamartId: ArtifactIds.lakehouse_sales_bronze, groupId: 'ws-sales-na' }],
+          upstreamDatamarts: [{ targetDatamartId: ArtifactIds.lakehouse_sales_bronze, groupId: 'ws-0006' }],
           users: [],
           tags: ['customer', 'ml']
         }
@@ -1480,7 +1484,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
             { name: 'FactSalesEMEA', columns: [{ name: 'SaleID', dataType: 'Int64' }] },
             { name: 'DimCurrency', columns: [{ name: 'CurrencyCode', dataType: 'String' }] }
           ],
-          upstreamDatasets: [{ targetDatasetId: ArtifactIds.dataflow_salesforce_crm, groupId: 'ws-sales-na' }],
+          upstreamDatasets: [{ targetDatasetId: ArtifactIds.dataset_sales_analytics, groupId: 'ws-0008' }],
           users: [],
           tags: ['emea', 'sales']
         }
@@ -1552,7 +1556,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
     // ====== FINANCE - Additional Workspaces ======
     {
       id: generateWorkspaceId(),
-      name: 'Finance - General Ledger',
+      name: 'Finance - GL Reconciliation',
       type: 'Workspace',
       state: 'Active',
       isOnDedicatedCapacity: true,
@@ -1803,7 +1807,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
       state: 'Active',
       isOnDedicatedCapacity: true,
       capacityId: 'cap-finance-001',
-      domainId: 'dom-fpa',
+      domainId: 'dom-finance-fp',
       description: 'Budget vs actuals analysis',
       reports: [
         {
@@ -1836,7 +1840,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
             { name: 'FactActuals', columns: [{ name: 'AccountID', dataType: 'String' }] },
             { name: 'FactBudget', columns: [{ name: 'AccountID', dataType: 'String' }] }
           ],
-          upstreamDatasets: [{ targetDatasetId: 'art-finance-001', groupId: 'ws-finance' }],
+          upstreamDatasets: [{ targetDatasetId: ArtifactIds.dataset_finance_general_ledger, groupId: 'ws-0009' }],
           users: [],
           tags: ['budget', 'variance']
         }
@@ -2378,7 +2382,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
     },
     {
       id: generateWorkspaceId(),
-      name: 'Supply Chain - Logistics',
+      name: 'Supply Chain - Distribution',
       type: 'Workspace',
       state: 'Active',
       isOnDedicatedCapacity: true,
@@ -2438,7 +2442,7 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
     // ====== IT - Additional Workspaces ======
     {
       id: generateWorkspaceId(),
-      name: 'IT - Infrastructure Monitoring',
+      name: 'IT - Cloud Operations',
       type: 'Workspace',
       state: 'Active',
       isOnDedicatedCapacity: true,
@@ -2636,9 +2640,9 @@ export const MOCK_SCANNER_RESPONSE: WorkspaceInfoResponse = {
             { name: 'FactExecutiveKPIs', columns: [{ name: 'KPIID', dataType: 'String' }] }
           ],
           upstreamDatasets: [
-            { targetDatasetId: ArtifactIds.dataflow_salesforce_crm, groupId: 'ws-sales-na' },
-            { targetDatasetId: 'art-finance-001', groupId: 'ws-finance' },
-            { targetDatasetId: 'art-hr-workforce', groupId: 'ws-hr' }
+            { targetDatasetId: ArtifactIds.dataset_sales_analytics, groupId: 'ws-0008' },
+            { targetDatasetId: ArtifactIds.dataset_finance_general_ledger, groupId: 'ws-0009' },
+            { targetDatasetId: ArtifactIds.dataset_hr_analytics, groupId: 'ws-0011' }
           ],
           users: [],
           tags: ['board', 'executive']
