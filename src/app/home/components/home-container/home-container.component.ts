@@ -16,7 +16,7 @@
  * @version 2.0.0 - Microsoft Fabric Migration
  */
 
-import { Component, ElementRef, ViewChild, OnInit, OnDestroy } from '@angular/core';
+import { Component, ElementRef, ViewChild, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Subject, forkJoin, of } from 'rxjs';
 import { take, takeUntil } from 'rxjs/operators';
@@ -1262,11 +1262,16 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       .width(window.innerWidth)
       .height(window.innerHeight)
       .backgroundColor('#0a0e27')
-      .enableNodeDrag(false) // Disable drag - use dedicated assignment panel instead
+      .enableNodeDrag(false)
       .nodeRelSize(8)
+      // Pre-compute layout so the graph appears settled (critical for big tenants)
+      .warmupTicks(visibleNodes.length > 200 ? 100 : 50)
+      .cooldownTicks(visibleNodes.length > 200 ? 200 : 300)
+      .d3AlphaDecay(0.03) // Slightly faster settling than default 0.0228
+      .d3VelocityDecay(0.5) // More friction to prevent oscillation
       .nodeVal((node: any) => {
         if (node.type === NodeType.Workspace && node.metadata?.isUnassigned) {
-          return 45; // 3x larger for unassigned workspaces
+          return 45;
         }
         return node.type === NodeType.Workspace ? 15 : 4;
       })
@@ -1430,7 +1435,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           const iconMesh = this.getNodeTypeImage(node.type as NodeType);
           group.add(iconMesh);
 
-          // Add artifact name label below icon
+          // Add artifact name label below icon (tagged for LOD)
           const label = new SpriteText(node.name);
           label.color = '#FFFFFF';
           label.textHeight = 3;
@@ -1438,6 +1443,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           label.padding = 2;
           label.borderRadius = 3;
           (label as any).position.set(0, -8, 0);
+          (label as any).userData = { isLabel: true };
           group.add(label as any);
 
           // Add OFFICIAL endorsement badge SVG icon
@@ -1483,6 +1489,19 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         }
 
         return group;
+      })
+      // Level of Detail: hide artifact labels when camera is far away
+      .nodePositionUpdate((obj: any, coords: any, node: any) => {
+        if (node.type !== NodeType.Workspace && obj.children) {
+          const camera = graph.camera();
+          const dist = camera.position.distanceTo(new THREE.Vector3(coords.x, coords.y, coords.z));
+          const labelThreshold = visibleNodes.length > 200 ? 300 : 500;
+          obj.children.forEach((child: any) => {
+            if (child.userData?.isLabel) {
+              child.visible = dist < labelThreshold;
+            }
+          });
+        }
       })
       .nodeColor((node: any) => {
         // DRAGGING: Bright cyan
@@ -1537,11 +1556,25 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         return color;
       })
       .linkWidth((link: any) => {
-        // Cross-workspace lineage: thick and prominent
         if (link.type === LinkType.CrossWorkspace) return 2.5;
-        // Contains: thin structural lines
         if (link.type === LinkType.Contains) return 0.5;
         return 0.5;
+      })
+      .onBackgroundClick(() => {
+        // Clear all highlights and close panels
+        if (this.focusedNode) {
+          this.focusedNode = null;
+          this.highlightNodes.clear();
+          this.highlightLinks.clear();
+          this.updateHighlight();
+        }
+        if (this.showSidePanel) {
+          this.closeSidePanel();
+        }
+      })
+      .onEngineStop(() => {
+        // After layout settles, zoom to fit the whole world
+        graph.zoomToFit(800, 40);
       });
 
     this.shouldShowGraph = true;
@@ -1767,6 +1800,46 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     this.sidePanelNode = null;
   }
 
+  @HostListener('document:keydown', ['$event'])
+  handleKeyboardShortcuts (event: KeyboardEvent): void {
+    // Escape: close any open panel, clear highlights
+    if (event.key === 'Escape') {
+      if (this.showSidePanel) { this.closeSidePanel(); return; }
+      if (this.showLegendPanel) { this.showLegendPanel = false; return; }
+      if (this.showEndorsementPanel) { this.showEndorsementPanel = false; return; }
+      if (this.impactAnalysisActive) { this.clearImpactAnalysis(); return; }
+      if (this.focusedNode) {
+        this.focusedNode = null;
+        this.highlightNodes.clear();
+        this.highlightLinks.clear();
+        this.updateHighlight();
+        return;
+      }
+      if (this.isolatedDomain) {
+        this.isolatedDomain = null;
+        this.applyFilters();
+        return;
+      }
+    }
+
+    // "/" : focus search (skip if already in input)
+    if (event.key === '/' && !(event.target as HTMLElement)?.closest('input, textarea')) {
+      event.preventDefault();
+      const searchInput = document.querySelector('.search-input') as HTMLInputElement;
+      if (searchInput) searchInput.focus();
+    }
+
+    // "r" : reset view (zoom to fit)
+    if (event.key === 'r' && !(event.target as HTMLElement)?.closest('input, textarea')) {
+      this.zoomToFit();
+    }
+
+    // "l" : toggle legend
+    if (event.key === 'l' && !(event.target as HTMLElement)?.closest('input, textarea')) {
+      this.toggleLegendPanel();
+    }
+  }
+
   /** Toggle legend panel visibility */
   public toggleLegendPanel (): void {
     this.showLegendPanel = !this.showLegendPanel;
@@ -1819,9 +1892,19 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     return this.nodes.filter(n => n.workspaceId === this.sidePanelNode.id && n.type !== NodeType.Workspace).length;
   }
 
-  private getWorkspaceName (workspaceId: string): string {
+  public getWorkspaceName (workspaceId: string): string {
     const ws = this.nodes.find(n => n.id === workspaceId && n.type === NodeType.Workspace);
     return ws?.name || workspaceId;
+  }
+
+  public getSensitivityLabelName (labelId: string): string {
+    const labels: Record<string, string> = {
+      '00000000-0000-0000-0000-000000000004': 'Highly Confidential',
+      '00000000-0000-0000-0000-000000000003': 'Confidential',
+      '00000000-0000-0000-0000-000000000002': 'Internal',
+      '00000000-0000-0000-0000-000000000001': 'Public'
+    };
+    return labels[labelId] || labelId || 'None';
   }
 
   /**
@@ -2516,7 +2599,8 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
 
   private createDomainClusterForce (): any {
     const domainStrength = 0.3;
-    const artifactStrength = 0.6; // Stronger pull to keep artifacts near parent workspace
+    const artifactStrength = 0.6;
+    const domainRepulsion = 0.8; // Push domains apart for big tenants
 
     return (alpha: number) => {
       // Phase 1: Calculate domain centers from workspace positions
@@ -2544,7 +2628,31 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         }
       });
 
-      // Phase 2: Build workspace position lookup for artifact attraction
+      // Phase 2: Domain repulsion — push domain centers apart to prevent overlap
+      const domainIds = Array.from(domainCenters.keys());
+      const domainForces = new Map<string, { fx: number, fy: number, fz: number }>();
+      domainIds.forEach(id => domainForces.set(id, { fx: 0, fy: 0, fz: 0 }));
+
+      for (let i = 0; i < domainIds.length; i++) {
+        for (let j = i + 1; j < domainIds.length; j++) {
+          const a = domainCenters.get(domainIds[i])!;
+          const b = domainCenters.get(domainIds[j])!;
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const dz = a.z - b.z;
+          const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+          const minDist = 150; // Minimum separation between domains
+          if (dist < minDist) {
+            const force = (minDist - dist) / dist * domainRepulsion;
+            const fa = domainForces.get(domainIds[i])!;
+            const fb = domainForces.get(domainIds[j])!;
+            fa.fx += dx * force; fa.fy += dy * force; fa.fz += dz * force;
+            fb.fx -= dx * force; fb.fy -= dy * force; fb.fz -= dz * force;
+          }
+        }
+      }
+
+      // Phase 3: Build workspace position lookup for artifact attraction
       const workspacePositions = new Map<string, { x: number, y: number, z: number }>();
       this.nodes.forEach((node: any) => {
         if (node.type === NodeType.Workspace) {
@@ -2552,18 +2660,24 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         }
       });
 
-      // Phase 3: Apply forces
+      // Phase 4: Apply all forces
       this.nodes.forEach((node: any) => {
         if (node.type === NodeType.Workspace && node.metadata?.domainId) {
-          // Pull workspaces toward domain center
           const center = domainCenters.get(node.metadata.domainId);
           if (center) {
+            // Pull toward domain center
             node.vx += (center.x - (node.x || 0)) * domainStrength * alpha;
             node.vy += (center.y - (node.y || 0)) * domainStrength * alpha;
             node.vz += (center.z - (node.z || 0)) * domainStrength * alpha;
+            // Apply domain repulsion
+            const df = domainForces.get(node.metadata.domainId);
+            if (df) {
+              node.vx += df.fx * alpha;
+              node.vy += df.fy * alpha;
+              node.vz += df.fz * alpha;
+            }
           }
         } else if (node.type !== NodeType.Workspace && node.workspaceId) {
-          // Pull artifacts toward their parent workspace
           const wsPos = workspacePositions.get(node.workspaceId);
           if (wsPos) {
             node.vx += (wsPos.x - (node.x || 0)) * artifactStrength * alpha;

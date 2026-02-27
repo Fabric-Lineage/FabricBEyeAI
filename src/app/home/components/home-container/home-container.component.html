@@ -372,7 +372,7 @@
           </div>
           <div class="detail-row" *ngIf="sidePanelNode.metadata?.sensitivityLabel">
             <span class="label">Sensitivity</span>
-            <span class="value">{{ sidePanelNode.metadata?.sensitivityLabel?.labelId || 'None' }}</span>
+            <span class="value">{{ getSensitivityLabelName(sidePanelNode.metadata?.sensitivityLabel?.labelId) }}</span>
           </div>
           <div class="detail-row" *ngIf="sidePanelNode.metadata?.description">
             <span class="label">Description</span>
@@ -380,7 +380,7 @@
           </div>
           <div class="detail-row">
             <span class="label">Workspace</span>
-            <span class="value">{{ sidePanelNode.workspaceId }}</span>
+            <span class="value">{{ getWorkspaceName(sidePanelNode.workspaceId) }}</span>
           </div>
         </ng-container>
 
