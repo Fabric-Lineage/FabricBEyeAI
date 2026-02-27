@@ -1201,6 +1201,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
 
     this.graphInstance = graph;
 
+    // Pre-compute deterministic domain anchor positions before force simulation
+    this.computeDomainAnchors();
+
     graph.graphData(gData)
       .width(window.innerWidth)
       .height(window.innerHeight)
@@ -1569,17 +1572,20 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
 
     // Zoom to fit once after initial layout settles
     let initialZoomDone = false;
+    // Add domain boundary spheres after layout fully settles
+    let boundariesCreated = false;
     graph.onEngineStop(() => {
       if (!initialZoomDone) {
         initialZoomDone = true;
         graph.zoomToFit(800, 40);
       }
+      if (!boundariesCreated) {
+        boundariesCreated = true;
+        this.addDomainBoundaries();
+      }
     });
 
     this.shouldShowGraph = true;
-
-    // Add domain boundary spheres after layout settles
-    this.addDomainBoundaries();
   }
 
   private updateHighlight (): void {
@@ -1629,35 +1635,33 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   private addDomainBoundaries (): void {
     if (!this.graphInstance) return;
 
-    // Wait for nodes to settle into positions
-    setTimeout(() => {
-      const scene = this.graphInstance.scene();
+    const scene = this.graphInstance.scene();
 
-      // Group ALL nodes (workspaces + artifacts) by domain for boundary calculation
-      const domainNodes: Map<string, any[]> = new Map();
-      const workspaceDomainMap = new Map<string, string>();
+    // Group ALL nodes (workspaces + artifacts) by domain for boundary calculation
+    const domainNodes: Map<string, any[]> = new Map();
+    const workspaceDomainMap = new Map<string, string>();
 
-      // First pass: map workspaces to domains
-      this.visibleNodes.forEach(node => {
-        if (node.type === NodeType.Workspace && node.metadata?.domainId) {
-          workspaceDomainMap.set(node.id, node.metadata.domainId);
-          const domainId = node.metadata.domainId;
-          if (!domainNodes.has(domainId)) {
-            domainNodes.set(domainId, []);
-          }
+    // First pass: map workspaces to domains
+    this.visibleNodes.forEach(node => {
+      if (node.type === NodeType.Workspace && node.metadata?.domainId) {
+        workspaceDomainMap.set(node.id, node.metadata.domainId);
+        const domainId = node.metadata.domainId;
+        if (!domainNodes.has(domainId)) {
+          domainNodes.set(domainId, []);
+        }
+        domainNodes.get(domainId)!.push(node);
+      }
+    });
+
+    // Second pass: include artifacts in their workspace's domain
+    this.visibleNodes.forEach(node => {
+      if (node.type !== NodeType.Workspace && node.workspaceId) {
+        const domainId = workspaceDomainMap.get(node.workspaceId);
+        if (domainId && domainNodes.has(domainId)) {
           domainNodes.get(domainId)!.push(node);
         }
-      });
-
-      // Second pass: include artifacts in their workspace's domain
-      this.visibleNodes.forEach(node => {
-        if (node.type !== NodeType.Workspace && node.workspaceId) {
-          const domainId = workspaceDomainMap.get(node.workspaceId);
-          if (domainId && domainNodes.has(domainId)) {
-            domainNodes.get(domainId)!.push(node);
-          }
-        }
-      });
+      }
+    });
 
       console.log(`[BOUNDARIES] Creating spheres for ${domainNodes.size} domains with visible workspaces`);
 
@@ -1686,9 +1690,10 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           maxDistance = Math.max(maxDistance, distance);
         });
 
-        // Scale radius based on node count — small domains get small spheres
-        const baseRadius = Math.max(maxDistance * 1.1, 20);
-        const radius = Math.min(baseRadius, 40 + nodes.length * 8);
+        // Sphere radius: must contain all nodes, but also scale with node count
+        // so bigger domains always look bigger than smaller ones
+        const minByCount = 15 + nodes.length * 3; // floor based on how many nodes
+        const radius = Math.max(maxDistance + 12, minByCount);
 
         // Create transparent sphere
         const geometry = new THREE.SphereGeometry(radius, 32, 32);
@@ -1723,7 +1728,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           label.borderRadius = 4;
           label.fontWeight = '600';
           labelGroup.add(label as any);
-          labelGroup.position.set(center.x, center.y + radius + 15, center.z);
+          labelGroup.position.set(center.x, center.y + radius + 8, center.z);
           (labelGroup as any).userData = { domainId, type: 'domain-label', clickable: true };
           (labelGroup as any).name = `domain-label-${domainId}`;
           scene.add(labelGroup);
@@ -1737,7 +1742,6 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           }
         }
       });
-    }, 3000); // Wait 3 seconds for layout to settle
   }
 
   // Sequential domain color assignment — guarantees every domain gets a unique color
@@ -2761,62 +2765,43 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
 
   // ========== END ADVANCED NAVIGATION FEATURES ==========
 
+  // Pre-computed deterministic anchor positions for each domain (Fibonacci sphere)
+  private domainAnchors = new Map<string, { x: number, y: number, z: number }>();
+
+  private computeDomainAnchors (): void {
+    // Collect domains sorted alphabetically for deterministic ordering
+    const domainIds = Array.from(new Set(
+      this.nodes
+        .filter((n: any) => n.type === NodeType.Workspace && n.metadata?.domainId)
+        .map((n: any) => n.metadata.domainId)
+    )).sort();
+
+    const n = domainIds.length;
+    if (n === 0) return;
+
+    // Radius scales with domain count — compact but separated
+    const radius = 60 + n * 18;
+
+    // Fibonacci sphere: evenly distribute N points on a sphere
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+    domainIds.forEach((id: string, i: number) => {
+      const y = 1 - (i / (n - 1 || 1)) * 2; // y goes from 1 to -1
+      const radiusAtY = Math.sqrt(1 - y * y);
+      const theta = goldenAngle * i;
+      this.domainAnchors.set(id, {
+        x: Math.cos(theta) * radiusAtY * radius,
+        y: y * radius,
+        z: Math.sin(theta) * radiusAtY * radius
+      });
+    });
+  }
+
   private createDomainClusterForce (): any {
-    const domainStrength = 0.3;
-    const artifactStrength = 0.6;
-    const domainRepulsion = 0.9;
+    const anchorStrength = 0.4; // Pull workspaces toward domain anchor
+    const artifactStrength = 0.6; // Pull artifacts toward parent workspace
 
     return (alpha: number) => {
-      // Phase 1: Calculate domain centers from workspace positions
-      const domainCenters = new Map<string, { x: number, y: number, z: number, count: number }>();
-
-      this.nodes.forEach((node: any) => {
-        if (node.type === NodeType.Workspace && node.metadata?.domainId) {
-          const domainId = node.metadata.domainId;
-          if (!domainCenters.has(domainId)) {
-            domainCenters.set(domainId, { x: 0, y: 0, z: 0, count: 0 });
-          }
-          const center = domainCenters.get(domainId)!;
-          center.x += node.x || 0;
-          center.y += node.y || 0;
-          center.z += node.z || 0;
-          center.count++;
-        }
-      });
-
-      domainCenters.forEach(center => {
-        if (center.count > 0) {
-          center.x /= center.count;
-          center.y /= center.count;
-          center.z /= center.count;
-        }
-      });
-
-      // Phase 2: Domain repulsion — push domain centers apart to prevent overlap
-      const domainIds = Array.from(domainCenters.keys());
-      const domainForces = new Map<string, { fx: number, fy: number, fz: number }>();
-      domainIds.forEach(id => domainForces.set(id, { fx: 0, fy: 0, fz: 0 }));
-
-      for (let i = 0; i < domainIds.length; i++) {
-        for (let j = i + 1; j < domainIds.length; j++) {
-          const a = domainCenters.get(domainIds[i])!;
-          const b = domainCenters.get(domainIds[j])!;
-          const dx = a.x - b.x;
-          const dy = a.y - b.y;
-          const dz = a.z - b.z;
-          const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-          const minDist = 180; // Balanced domain separation
-          if (dist < minDist) {
-            const force = (minDist - dist) / dist * domainRepulsion;
-            const fa = domainForces.get(domainIds[i])!;
-            const fb = domainForces.get(domainIds[j])!;
-            fa.fx += dx * force; fa.fy += dy * force; fa.fz += dz * force;
-            fb.fx -= dx * force; fb.fy -= dy * force; fb.fz -= dz * force;
-          }
-        }
-      }
-
-      // Phase 3: Build workspace position lookup for artifact attraction
+      // Build workspace position lookup for artifact attraction
       const workspacePositions = new Map<string, { x: number, y: number, z: number }>();
       this.nodes.forEach((node: any) => {
         if (node.type === NodeType.Workspace) {
@@ -2824,22 +2809,14 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         }
       });
 
-      // Phase 4: Apply all forces
       this.nodes.forEach((node: any) => {
         if (node.type === NodeType.Workspace && node.metadata?.domainId) {
-          const center = domainCenters.get(node.metadata.domainId);
-          if (center) {
-            // Pull toward domain center
-            node.vx += (center.x - (node.x || 0)) * domainStrength * alpha;
-            node.vy += (center.y - (node.y || 0)) * domainStrength * alpha;
-            node.vz += (center.z - (node.z || 0)) * domainStrength * alpha;
-            // Apply domain repulsion
-            const df = domainForces.get(node.metadata.domainId);
-            if (df) {
-              node.vx += df.fx * alpha;
-              node.vy += df.fy * alpha;
-              node.vz += df.fz * alpha;
-            }
+          const anchor = this.domainAnchors.get(node.metadata.domainId);
+          if (anchor) {
+            // Pull workspace toward its domain's fixed anchor position
+            node.vx += (anchor.x - (node.x || 0)) * anchorStrength * alpha;
+            node.vy += (anchor.y - (node.y || 0)) * anchorStrength * alpha;
+            node.vz += (anchor.z - (node.z || 0)) * anchorStrength * alpha;
           }
         } else if (node.type !== NodeType.Workspace && node.workspaceId) {
           const wsPos = workspacePositions.get(node.workspaceId);
