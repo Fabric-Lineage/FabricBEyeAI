@@ -307,3 +307,15 @@ export interface FabricDomainResponse {
   description?: string;
   parentDomainId?: string;
 }
+
+/**
+ * Fabric REST API item response
+ * Based on: https://learn.microsoft.com/en-us/rest/api/fabric/admin/items/list-items
+ */
+export interface FabricItemResponse {
+  id: string;
+  type: string;           // 'Notebook' | 'Pipeline' | 'Lakehouse' | 'Warehouse' | 'Eventstream' etc.
+  displayName: string;
+  description?: string;
+  workspaceId: string;
+}

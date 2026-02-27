@@ -37,7 +37,7 @@ import { Link, LinkType, Node, NodeType } from '../../models/graphModels';
 import type { WorkspaceInfoResponse, Domain } from '../../models/scanner-api.types';
 
 // Data
-import { MOCK_SCANNER_RESPONSE, MOCK_DOMAINS } from '../../data/scanner-mock-data';
+import { MOCK_SCANNER_RESPONSE, MOCK_DOMAINS, MOCK_FABRIC_ITEMS } from '../../data/scanner-mock-data';
 
 // Dialogs
 import { ProgressBarDialogComponent } from 'src/app/components/progress-bar-dialog/progress-bar-dialog.component';
@@ -464,6 +464,59 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         console.warn('Could not fetch domains from Fabric API:', err.status);
       }
     });
+  }
+
+  /**
+   * Adds Fabric-native items (from Items API) as nodes in the graph.
+   * Maps item types to NodeType enum and creates Contains links to parent workspace.
+   */
+  private addFabricItems (items: any[]): void {
+    const typeMap: Record<string, NodeType> = {
+      'Notebook': NodeType.Notebook,
+      'Pipeline': NodeType.Pipeline,
+      'Lakehouse': NodeType.Lakehouse,
+      'Warehouse': NodeType.DataWarehouse,
+      'DataWarehouse': NodeType.DataWarehouse,
+      'Eventstream': NodeType.Eventstream,
+      'KQLDatabase': NodeType.KQLDatabase,
+      'KQLQueryset': NodeType.KQLQueryset,
+      'MLModel': NodeType.MLModel,
+      'MLExperiment': NodeType.MLExperiment,
+      'SparkJobDefinition': NodeType.SparkJobDefinition,
+      'DataflowGen2': NodeType.DataflowGen2,
+    };
+
+    let added = 0;
+    for (const item of items) {
+      const nodeType = typeMap[item.type];
+      if (!nodeType) continue;
+
+      // Skip if already added (e.g., from Scanner API datamarts)
+      if (this.nodes.find(n => n.id === item.id)) continue;
+
+      const node: Node = {
+        id: item.id,
+        name: item.displayName,
+        type: nodeType,
+        workspaceId: item.workspaceId,
+        metadata: {
+          description: item.description,
+          source: 'fabric-items-api'
+        }
+      };
+      this.nodes.push(node);
+
+      // Link to parent workspace
+      this.links.push({
+        source: item.workspaceId,
+        target: item.id,
+        type: LinkType.Contains
+      });
+      added++;
+    }
+    if (added > 0) {
+      console.log(`✓ Added ${added} Fabric-native items (Notebooks, Pipelines, etc.)`);
+    }
   }
 
   // =================================================================
@@ -914,6 +967,11 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           }
         }
       }
+    }
+
+    // PASS 1b: Add Fabric-native items (Notebooks, Pipelines, etc.) from Items API
+    if (this.isDemoMode) {
+      this.addFabricItems(MOCK_FABRIC_ITEMS);
     }
 
     // PASS 2: Create upstream/downstream lineage links

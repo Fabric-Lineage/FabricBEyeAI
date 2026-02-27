@@ -119,6 +119,24 @@ export class HomeProxy {
     );
   }
 
+  /**
+   * Get Fabric-native items (Notebooks, Pipelines, Lakehouses, etc.)
+   * Based on: https://learn.microsoft.com/en-us/rest/api/fabric/admin/items/list-items
+   */
+  public getItems (workspaceId?: string): Observable<any> {
+    const apiUrl: string = this.getEnvironment().apiUrl;
+    const url = workspaceId
+      ? `https://${apiUrl}/v1/admin/workspaces/${workspaceId}/items`
+      : `https://${apiUrl}/v1/admin/items`;
+    return this.httpService.get(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        authorization: 'Bearer ' + this.token,
+        'X-POWERBI-ADMIN-CLIENT-NAME': 'FabricBEyeAI'
+      }
+    });
+  }
+
   public getEnvironment (): { apiUrl: string, url: string } {
     const env: string = this.route.snapshot.queryParams.env;
     const envLowerCase: string = env ? env.toLocaleLowerCase() : env;

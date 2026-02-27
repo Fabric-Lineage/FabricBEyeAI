@@ -7,7 +7,7 @@
  * Sensitivity labels use GUID-format IDs to match real API behavior.
  */
 
-import { WorkspaceInfoResponse, Domain, WorkspaceInfo } from '../models/scanner-api.types';
+import { WorkspaceInfoResponse, Domain, WorkspaceInfo, FabricItemResponse } from '../models/scanner-api.types';
 
 // Domain definitions (Data Mesh architecture)
 export const MOCK_DOMAINS: Domain[] = [
@@ -2944,3 +2944,43 @@ MOCK_DOMAINS.forEach(domain => {
     .filter(ws => ws.domainId === domain.id)
     .map(ws => ws.id);
 });
+
+/**
+ * Mock Fabric-native items (from GET /v1/admin/items)
+ * These are artifact types NOT returned by the Scanner API:
+ * Notebooks, Pipelines, Lakehouses, Warehouses, Eventstreams, KQL Databases
+ *
+ * workspaceId references are resolved at runtime by matching workspace names.
+ */
+const wsLookup = (name: string): string => {
+  const ws = MOCK_SCANNER_RESPONSE.workspaces.find(w => w.name === name);
+  return ws?.id || 'ws-unknown';
+};
+
+export const MOCK_FABRIC_ITEMS: FabricItemResponse[] = [
+  // Data Engineering — ETL Pipelines workspace
+  { id: 'fab-item-001', type: 'Pipeline', displayName: 'Bronze Ingestion Pipeline', workspaceId: wsLookup('Data Engineering - ETL Pipelines') },
+  { id: 'fab-item-002', type: 'Pipeline', displayName: 'Silver Transformation Pipeline', workspaceId: wsLookup('Data Engineering - ETL Pipelines') },
+  { id: 'fab-item-003', type: 'Notebook', displayName: 'Data Quality Checks', workspaceId: wsLookup('Data Engineering - ETL Pipelines') },
+
+  // Data Engineering — Enterprise Lakehouse workspace
+  { id: 'fab-item-004', type: 'Lakehouse', displayName: 'Enterprise Bronze Lakehouse', workspaceId: wsLookup('Data Engineering - Enterprise Lakehouse') },
+  { id: 'fab-item-005', type: 'Lakehouse', displayName: 'Enterprise Silver Lakehouse', workspaceId: wsLookup('Data Engineering - Enterprise Lakehouse') },
+
+  // Data Science — ML Models workspace
+  { id: 'fab-item-006', type: 'Notebook', displayName: 'Customer Segmentation Training', workspaceId: wsLookup('Data Science - ML Models') },
+  { id: 'fab-item-007', type: 'Notebook', displayName: 'Feature Engineering Pipeline', workspaceId: wsLookup('Data Science - ML Models') },
+  { id: 'fab-item-008', type: 'MLModel', displayName: 'Customer Churn Model v2', workspaceId: wsLookup('Data Science - ML Models') },
+
+  // Data Science — Customer Churn workspace
+  { id: 'fab-item-009', type: 'Notebook', displayName: 'Churn Analysis Notebook', workspaceId: wsLookup('Data Science - Customer Churn') },
+  { id: 'fab-item-010', type: 'MLExperiment', displayName: 'Churn Prediction Experiments', workspaceId: wsLookup('Data Science - Customer Churn') },
+
+  // Data Science — Predictive Models workspace
+  { id: 'fab-item-011', type: 'Notebook', displayName: 'Revenue Forecasting Notebook', workspaceId: wsLookup('Data Science - Predictive Models') },
+  { id: 'fab-item-012', type: 'MLModel', displayName: 'Revenue Forecast Model', workspaceId: wsLookup('Data Science - Predictive Models') },
+
+  // IT — Infrastructure Monitoring workspace
+  { id: 'fab-item-013', type: 'Eventstream', displayName: 'Infrastructure Event Stream', workspaceId: wsLookup('IT - Infrastructure Monitoring') },
+  { id: 'fab-item-014', type: 'KQLDatabase', displayName: 'Infrastructure Logs DB', workspaceId: wsLookup('IT - Infrastructure Monitoring') },
+];
