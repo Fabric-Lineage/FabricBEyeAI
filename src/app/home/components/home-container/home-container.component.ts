@@ -736,10 +736,31 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     this.focusedNode = null;
     this.hoverNode = null;
 
+    // PASS 1: Create workspace and artifact nodes from Scanner API data
+    const { numberOfWorkspaces } = this.createNodesFromScannerData(workspaces);
+
+    // PASS 1b: Add Fabric-native items (Notebooks, Pipelines, etc.) from Items API
+    if (this.isDemoMode) {
+      this.addFabricItems(MOCK_FABRIC_ITEMS);
+    }
+
+    // PASS 2: Build upstream/downstream lineage links
+    this.buildLineageLinks(workspaces);
+
+    // PASS 3-5: Validate links, limit workspaces, remove orphans
+    const validLinks = this.validateAndFilterLinks(numberOfWorkspaces);
+
+    // Apply visibility filters (unassigned workspaces)
+    const { visibleNodes, visibleLinks } = this.applyVisibilityFilters(validLinks);
+
+    // Render the 3D graph
+    this.initializeGraph(visibleNodes, visibleLinks);
+  }
+
+  private createNodesFromScannerData (workspaces: any[]): { numberOfWorkspaces: number, unassignedWorkspaces: number } {
     let numberOfWorkspaces = 0;
     let unassignedWorkspaces = 0;
 
-    // PASS 1: Create all workspace and artifact nodes
     for (const workspace of workspaces) {
       if (workspace.state === 'Deleted') {
         continue;
@@ -989,12 +1010,10 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       }
     }
 
-    // PASS 1b: Add Fabric-native items (Notebooks, Pipelines, etc.) from Items API
-    if (this.isDemoMode) {
-      this.addFabricItems(MOCK_FABRIC_ITEMS);
-    }
+    return { numberOfWorkspaces, unassignedWorkspaces };
+  }
 
-    // PASS 2: Create upstream/downstream lineage links
+  private buildLineageLinks (workspaces: any[]): void {
     for (const workspace of workspaces) {
       // Dataset upstream links
       for (const dataset of workspace.datasets ?? []) {
@@ -1095,7 +1114,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         }
       }
     }
+  }
 
+  private validateAndFilterLinks (numberOfWorkspaces: number): Link[] {
     // PASS 3: Calculate cross-workspace relationships for node metadata
     const allNodeIds = new Set(this.nodes.map(n => n.id));
     let validLinks: Link[] = this.links.filter(link => allNodeIds.has(link.source as string) && allNodeIds.has(link.target as string));
@@ -1198,6 +1219,10 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     // Log summary for debugging
     console.log(`✓ Loaded ${finalWorkspaces.length} workspaces (${finalUnassigned.length} unassigned), ${finalArtifacts.length} artifacts, ${validLinks.length} links`);
 
+    return validLinks;
+  }
+
+  private applyVisibilityFilters (validLinks: Link[]): { visibleNodes: Node[], visibleLinks: Link[] } {
     // FILTER DATA before passing to graph - remove unassigned workspaces and their artifacts
     let visibleNodes = this.nodes;
     let visibleLinks = validLinks;
@@ -1230,6 +1255,10 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     // Store visible nodes for domain boundaries and forces
     this.visibleNodes = visibleNodes;
 
+    return { visibleNodes, visibleLinks };
+  }
+
+  private initializeGraph (visibleNodes: Node[], visibleLinks: Link[]): void {
     // RENDER THE GRAPH with filtered data
     const gData = {
       nodes: visibleNodes,
