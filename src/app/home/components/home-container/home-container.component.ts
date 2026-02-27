@@ -92,6 +92,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   /** Visible nodes after filtering (used by graph) */
   private visibleNodes: Node[] = [];
 
+  /** Fast node lookup by ID for link color computation */
+  private nodeMap: Map<string, Node> = new Map();
+
   /** Graph links (relationships between nodes) */
   public links: Link[] = [];
 
@@ -1231,6 +1234,12 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   }
 
   private initializeGraph (visibleNodes: Node[], visibleLinks: Link[]): void {
+    // Build a fast node lookup for link color computation
+    this.nodeMap.clear();
+    for (const node of visibleNodes) {
+      this.nodeMap.set(node.id, node);
+    }
+
     // RENDER THE GRAPH with filtered data
     const gData = {
       nodes: visibleNodes,
@@ -1255,9 +1264,6 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       .d3AlphaDecay(0.03) // Slightly faster settling than default 0.0228
       .d3VelocityDecay(0.5) // More friction to prevent oscillation
       .nodeVal((node: any) => {
-        if (node.type === NodeType.Workspace && node.metadata?.isUnassigned) {
-          return 45;
-        }
         return node.type === NodeType.Workspace ? 15 : 4;
       })
       .d3Force('domainCluster', this.createDomainClusterForce())
@@ -1532,7 +1538,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         // Contains: domain-colored structural link
         if (link.type === LinkType.Contains) {
           const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source;
-          const sourceNode = this.nodes.find((n: any) => n.id === sourceId);
+          const sourceNode = this.nodeMap.get(sourceId);
           if (sourceNode?.metadata?.domainId) {
             return this.getDomainColorRGBA(sourceNode.metadata.domainId, 0.45);
           }
@@ -1736,7 +1742,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     const imgData = renderer.domElement.toDataURL('image/png');
 
     const link = document.createElement('a');
-    link.download = `fabricbeyeai-graph-${new Date().getTime()}.png`;
+    link.download = `fabricbeye-graph-${new Date().getTime()}.png`;
     link.href = imgData;
     link.click();
   }
@@ -1752,7 +1758,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement('a');
-    link.download = `fabricbeyeai-graph-${new Date().getTime()}.json`;
+    link.download = `fabricbeye-graph-${new Date().getTime()}.json`;
     link.href = url;
     link.click();
 
@@ -2101,7 +2107,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           if (link.type === LinkType.CrossWorkspace) return 'rgba(96,205,255,0.7)';
           if (link.type === LinkType.Contains) {
             const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source;
-            const sourceNode = this.nodes.find((n: any) => n.id === sourceId);
+            const sourceNode = this.nodeMap.get(sourceId);
             if (sourceNode?.metadata?.domainId) {
               return this.getDomainColorRGBA(sourceNode.metadata.domainId, 0.45);
             }

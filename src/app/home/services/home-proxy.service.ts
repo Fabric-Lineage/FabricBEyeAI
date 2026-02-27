@@ -26,7 +26,7 @@ export class HomeProxy {
       headers: {
         'Content-Type': 'application/json',
         authorization: 'Bearer ' + this.token,
-        'X-POWERBI-ADMIN-CLIENT-NAME': 'FabricBEyeAI'
+        'X-POWERBI-ADMIN-CLIENT-NAME': 'FabricBEye'
       }
     };
 
@@ -40,7 +40,7 @@ export class HomeProxy {
       url: `https://${apiUrl}/v1.0/myorg/admin/workspaces/getInfo?lineage=true`,
       headers: {
         authorization: 'Bearer ' + this.token,
-        'X-POWERBI-ADMIN-CLIENT-NAME': 'FabricBEyeAI'
+        'X-POWERBI-ADMIN-CLIENT-NAME': 'FabricBEye'
       }
     };
 
@@ -92,7 +92,7 @@ export class HomeProxy {
           headers: {
             'Content-Type': 'application/json',
             authorization: 'Bearer ' + this.token,
-            'X-POWERBI-ADMIN-CLIENT-NAME': 'FabricBEyeAI'
+            'X-POWERBI-ADMIN-CLIENT-NAME': 'FabricBEye'
           }
         }
       )
@@ -113,7 +113,7 @@ export class HomeProxy {
         headers: {
           'Content-Type': 'application/json',
           authorization: 'Bearer ' + this.token,
-          'X-POWERBI-ADMIN-CLIENT-NAME': 'FabricBEyeAI'
+          'X-POWERBI-ADMIN-CLIENT-NAME': 'FabricBEye'
         }
       }
     );
@@ -132,7 +132,7 @@ export class HomeProxy {
       headers: {
         'Content-Type': 'application/json',
         authorization: 'Bearer ' + this.token,
-        'X-POWERBI-ADMIN-CLIENT-NAME': 'FabricBEyeAI'
+        'X-POWERBI-ADMIN-CLIENT-NAME': 'FabricBEye'
       }
     });
   }
