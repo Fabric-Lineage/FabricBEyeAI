@@ -1447,7 +1447,11 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           ? '#' + this.getDomainColor(node.metadata.domainId).toString(16).padStart(6, '0')
           : '#6B7FA3';
 
-        const sprite = new SpriteText(node.name);
+        // Count artifacts in this workspace
+        const artifactCount = this.nodes.filter(n => n.workspaceId === node.id && n.type !== NodeType.Workspace).length;
+        const displayName = artifactCount > 0 ? `${node.name}  (${artifactCount})` : node.name;
+
+        const sprite = new SpriteText(displayName);
         sprite.color = '#FFFFFF';
         sprite.textHeight = 5;
         sprite.backgroundColor = 'rgba(30, 30, 30, 0.9)';
@@ -1548,6 +1552,16 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         if (link.type === LinkType.CrossWorkspace) return 2.5;
         if (link.type === LinkType.Contains) return 1.5;
         return 1.2;
+      })
+      .linkLabel((link: any) => {
+        const sourceName = typeof link.source === 'object' ? link.source.name : link.source;
+        const targetName = typeof link.target === 'object' ? link.target.name : link.target;
+        const typeLabel = link.type === LinkType.CrossWorkspace ? 'Cross-workspace' :
+                          link.type === LinkType.Contains ? 'Contains' : 'Lineage';
+        return `<div style="background: #292827; padding: 8px 12px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.12); font-family: 'Segoe UI', sans-serif; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+          <div style="font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 4px;">${typeLabel}</div>
+          <div style="font-size: 13px; color: #fff;">${sourceName} → ${targetName}</div>
+        </div>`;
       })
       .onBackgroundClick(() => {
         // Clear all highlights and close panels
