@@ -1287,15 +1287,11 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
       .linkOpacity(1.0) // Full opacity - we control it in linkColor
       // Directional arrows with elegant styling
       .linkDirectionalArrowLength((link: any) => {
-        // CrossWorkspace: 8px arrows (data dependencies) - more prominent
-        // Contains: 5px arrows (workspace → artifact, artifact → artifact)
-        return link.type === LinkType.CrossWorkspace ? 8 : 5;
+        return link.type === LinkType.CrossWorkspace ? 6 : 0; // Only show arrows on cross-workspace lineage
       })
       .linkDirectionalArrowRelPos(1)
       .linkDirectionalArrowColor((link: any) => {
-        // CrossWorkspace: bright cyan for data flow
-        // Contains: solid white for clear visibility
-        return link.type === LinkType.CrossWorkspace ? COLOR_ARROW_CROSS_WS : '#FFFFFF';
+        return COLOR_ARROW_CROSS_WS;
       })
       // Rich HTML tooltips
       .nodeLabel((node: any) => {
@@ -1323,7 +1319,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           <div style="background: rgba(0,0,0,0.95); padding: 16px; border-radius: 10px; border: 2px solid ${this.getNodeColor(node.type)}; min-width: 240px;">
             <div style="font-size: 18px; font-weight: bold; color: ${this.getNodeColor(node.type)}; margin-bottom: 8px;">${node.name}</div>
             <div style="font-size: 13px; color: #10B981; margin-bottom: 6px;">📦 ${typeLabel}</div>
-            ${node.type === NodeType.Workspace ? `<div style="font-size: 12px; color: #60A5FA;">🏢 Domain: ${domainName}</div>` : `<div style="font-size: 12px; color: #888;">Workspace: ${node.workspaceId}</div>`}
+            ${node.type === NodeType.Workspace ? `<div style="font-size: 12px; color: #60A5FA;">🏢 Domain: ${domainName}</div>` : `<div style="font-size: 12px; color: #60A5FA;">📁 ${this.getWorkspaceName(node.workspaceId)}</div>`}
             ${endorsement !== 'None' ? `<div style="font-size: 13px; color: ${endorsementColor}; margin-top: 8px; padding: 4px 10px; background: rgba(0,120,212,0.15); border: 1px solid ${endorsementColor}; border-radius: 4px; display: inline-block; font-weight: 600;">${endorsementIcon}${endorsement}</div>` : ''}
             ${sensitivityHTML}
             ${node.metadata?.description ? `<div style="font-size: 11px; color: #aaa; margin-top: 8px; font-style: italic; border-top: 1px solid #333; padding-top: 6px;">${node.metadata.description}</div>` : ''}
@@ -1427,13 +1423,14 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         this.openSidePanel(node);
       })
       .linkDirectionalParticles((link: any) => {
-        if (link.type === LinkType.CrossWorkspace) {
-          return 8;
-        }
+        // Only animate cross-workspace lineage — the data flow story
+        return link.type === LinkType.CrossWorkspace ? 4 : 0;
       })
-      .linkDirectionalParticleSpeed(0.006)
-      .linkDirectionalParticleWidth(2)
-      .linkDirectionalParticleColor('#107C10')
+      .linkDirectionalParticleSpeed(0.004)
+      .linkDirectionalParticleWidth(1.5)
+      .linkDirectionalParticleColor((link: any) => {
+        return link.type === LinkType.CrossWorkspace ? '#00BCF2' : '#FFFFFF';
+      })
       .nodeThreeObject((node: any) => {
         if (node.type !== NodeType.Workspace) {
           // Create group to hold icon + label + endorsement badge
@@ -1530,31 +1527,27 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           // Highlight active links with bright colors
           if (this.highlightLinks.size > 0) {
             if (this.highlightLinks.has(link)) {
-              // Bright colors for highlighted links
               if (link.type === LinkType.CrossWorkspace) return COLOR_ARROW_CROSS_WS;
-              if (link.type === LinkType.Contains) return '#FF6600'; // BRIGHT ORANGE
+              if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.6)';
               return 'rgba(200,200,200,0.8)';
             }
-            // Dim non-highlighted links
-            return 'rgba(100,100,100,0.1)';
+            return 'rgba(100,100,100,0.05)';
           }
-          // Default colors - make Contains VERY visible
-          if (link.type === LinkType.CrossWorkspace) return 'rgba(0,188,242,0.5)'; // Cyan
-          if (link.type === LinkType.Contains) return 'rgba(255,102,0,0.8)'; // BRIGHT ORANGE - HIGH OPACITY
-          return 'rgba(150,150,150,0.3)';
+          // Cross-workspace = hero links (bright cyan, high visibility)
+          if (link.type === LinkType.CrossWorkspace) return 'rgba(0,188,242,0.7)';
+          // Contains = subtle structural links (low-key, not distracting)
+          if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.08)';
+          return 'rgba(150,150,150,0.15)';
         })();
-
-        if (link.type === LinkType.Contains && Math.random() < 0.01) {
-          console.log('[LINK COLOR]', link.type, 'from', link.source, 'to', link.target, 'color:', color);
-        }
 
         return color;
       })
       .linkWidth((link: any) => {
-        // Make Contains links thicker for visibility
-        if (link.type === LinkType.Contains) return 2; // Thick orange lines
-        if (link.type === LinkType.CrossWorkspace) return 2;
-        return 1;
+        // Cross-workspace lineage: thick and prominent
+        if (link.type === LinkType.CrossWorkspace) return 2.5;
+        // Contains: thin structural lines
+        if (link.type === LinkType.Contains) return 0.5;
+        return 0.5;
       });
 
     this.shouldShowGraph = true;
@@ -1583,15 +1576,29 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       const scene = this.graphInstance.scene();
 
-      // Group workspace nodes by domain - USE VISIBLE NODES ONLY
+      // Group ALL nodes (workspaces + artifacts) by domain for boundary calculation
       const domainNodes: Map<string, any[]> = new Map();
+      const workspaceDomainMap = new Map<string, string>();
+
+      // First pass: map workspaces to domains
       this.visibleNodes.forEach(node => {
         if (node.type === NodeType.Workspace && node.metadata?.domainId) {
+          workspaceDomainMap.set(node.id, node.metadata.domainId);
           const domainId = node.metadata.domainId;
           if (!domainNodes.has(domainId)) {
             domainNodes.set(domainId, []);
           }
           domainNodes.get(domainId)!.push(node);
+        }
+      });
+
+      // Second pass: include artifacts in their workspace's domain
+      this.visibleNodes.forEach(node => {
+        if (node.type !== NodeType.Workspace && node.workspaceId) {
+          const domainId = workspaceDomainMap.get(node.workspaceId);
+          if (domainId && domainNodes.has(domainId)) {
+            domainNodes.get(domainId)!.push(node);
+          }
         }
       });
 
@@ -1816,6 +1823,11 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   public getWorkspaceArtifactCount (): number {
     if (!this.sidePanelNode) return 0;
     return this.nodes.filter(n => n.workspaceId === this.sidePanelNode.id && n.type !== NodeType.Workspace).length;
+  }
+
+  private getWorkspaceName (workspaceId: string): string {
+    const ws = this.nodes.find(n => n.id === workspaceId && n.type === NodeType.Workspace);
+    return ws?.name || workspaceId;
   }
 
   /**
@@ -2525,13 +2537,13 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   // ========== END ADVANCED NAVIGATION FEATURES ==========
 
   private createDomainClusterForce (): any {
-    // Custom force to cluster nodes by domain
-    const strength = 0.3;
+    const domainStrength = 0.3;
+    const artifactStrength = 0.6; // Stronger pull to keep artifacts near parent workspace
 
     return (alpha: number) => {
+      // Phase 1: Calculate domain centers from workspace positions
       const domainCenters = new Map<string, { x: number, y: number, z: number, count: number }>();
 
-      // Calculate domain centers
       this.nodes.forEach((node: any) => {
         if (node.type === NodeType.Workspace && node.metadata?.domainId) {
           const domainId = node.metadata.domainId;
@@ -2546,7 +2558,6 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         }
       });
 
-      // Average the centers
       domainCenters.forEach(center => {
         if (center.count > 0) {
           center.x /= center.count;
@@ -2555,14 +2566,31 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
         }
       });
 
-      // Pull nodes toward their domain center
+      // Phase 2: Build workspace position lookup for artifact attraction
+      const workspacePositions = new Map<string, { x: number, y: number, z: number }>();
+      this.nodes.forEach((node: any) => {
+        if (node.type === NodeType.Workspace) {
+          workspacePositions.set(node.id, { x: node.x || 0, y: node.y || 0, z: node.z || 0 });
+        }
+      });
+
+      // Phase 3: Apply forces
       this.nodes.forEach((node: any) => {
         if (node.type === NodeType.Workspace && node.metadata?.domainId) {
+          // Pull workspaces toward domain center
           const center = domainCenters.get(node.metadata.domainId);
           if (center) {
-            node.vx += (center.x - (node.x || 0)) * strength * alpha;
-            node.vy += (center.y - (node.y || 0)) * strength * alpha;
-            node.vz += (center.z - (node.z || 0)) * strength * alpha;
+            node.vx += (center.x - (node.x || 0)) * domainStrength * alpha;
+            node.vy += (center.y - (node.y || 0)) * domainStrength * alpha;
+            node.vz += (center.z - (node.z || 0)) * domainStrength * alpha;
+          }
+        } else if (node.type !== NodeType.Workspace && node.workspaceId) {
+          // Pull artifacts toward their parent workspace
+          const wsPos = workspacePositions.get(node.workspaceId);
+          if (wsPos) {
+            node.vx += (wsPos.x - (node.x || 0)) * artifactStrength * alpha;
+            node.vy += (wsPos.y - (node.y || 0)) * artifactStrength * alpha;
+            node.vz += (wsPos.z - (node.z || 0)) * artifactStrength * alpha;
           }
         }
       });
