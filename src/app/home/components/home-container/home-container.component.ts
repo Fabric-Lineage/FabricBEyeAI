@@ -160,6 +160,9 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   /** Whether the sensitivity compliance view is active */
   public showSensitivityCompliance: boolean = false;
 
+  /** Whether the cross-workspace data flow view is active */
+  public crossWorkspaceViewActive: boolean = false;
+
   /** Set of hidden domain IDs */
   public hiddenDomains: Set<string> = new Set();
 
@@ -2034,6 +2037,7 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
   /** Toggle sensitivity compliance view — highlights unlabeled artifacts */
   public toggleSensitivityCompliance (): void {
     this.showSensitivityCompliance = !this.showSensitivityCompliance;
+    if (this.showSensitivityCompliance) this.crossWorkspaceViewActive = false;
     if (!this.graphInstance) return;
 
     if (this.showSensitivityCompliance) {
@@ -2046,7 +2050,67 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     } else {
       this.graphInstance
         .nodeOpacity(1)
-        .linkOpacity(0.6);
+        .linkOpacity(1);
+    }
+  }
+
+  public toggleCrossWorkspaceView (): void {
+    this.crossWorkspaceViewActive = !this.crossWorkspaceViewActive;
+    if (this.crossWorkspaceViewActive) this.showSensitivityCompliance = false;
+    if (!this.graphInstance) return;
+
+    if (this.crossWorkspaceViewActive) {
+      // Build set of nodes connected by cross-workspace links
+      const crossWSNodes = new Set<string>();
+      this.links.forEach(link => {
+        if ((link as any).type === LinkType.CrossWorkspace) {
+          const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source;
+          const targetId = typeof link.target === 'object' ? (link.target as any).id : link.target;
+          crossWSNodes.add(sourceId);
+          crossWSNodes.add(targetId);
+        }
+      });
+
+      this.graphInstance
+        .nodeOpacity((node: any) => {
+          if (crossWSNodes.has(node.id)) return 1;
+          if (node.type === NodeType.Workspace) return 0.3;
+          return 0.05;
+        })
+        .linkOpacity(1)
+        .linkColor((link: any) => {
+          if ((link as any).type === LinkType.CrossWorkspace) return 'rgba(0,188,242,0.9)';
+          return 'rgba(255,255,255,0.02)';
+        })
+        .linkWidth((link: any) => {
+          if ((link as any).type === LinkType.CrossWorkspace) return 3;
+          return 0.2;
+        });
+    } else {
+      this.graphInstance
+        .nodeOpacity(1)
+        .linkOpacity(1)
+        .linkColor(this.graphInstance.linkColor())
+        .linkWidth(this.graphInstance.linkWidth());
+      // Re-apply normal link colors
+      this.graphInstance
+        .linkColor((link: any) => {
+          if (this.highlightLinks.size > 0) {
+            if (this.highlightLinks.has(link)) {
+              if (link.type === LinkType.CrossWorkspace) return COLOR_ARROW_CROSS_WS;
+              if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.6)';
+              return 'rgba(200,200,200,0.8)';
+            }
+            return 'rgba(100,100,100,0.05)';
+          }
+          if (link.type === LinkType.CrossWorkspace) return 'rgba(0,188,242,0.7)';
+          if (link.type === LinkType.Contains) return 'rgba(255,255,255,0.08)';
+          return 'rgba(150,150,150,0.15)';
+        })
+        .linkWidth((link: any) => {
+          if (link.type === LinkType.CrossWorkspace) return 2.5;
+          return 0.5;
+        });
     }
   }
 

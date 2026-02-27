@@ -76,6 +76,11 @@
         <span>🏅</span> Trust
       </button>
 
+      <button class="control-btn" (click)="toggleCrossWorkspaceView()"
+              [class.active]="crossWorkspaceViewActive" title="Show only cross-workspace data flow">
+        <span>🔗</span> Data Flow
+      </button>
+
       <button class="control-btn" (click)="toggleSensitivityCompliance()" 
               [class.active]="showSensitivityCompliance" title="Show unlabeled artifacts">
         <span>🛡️</span> Compliance
