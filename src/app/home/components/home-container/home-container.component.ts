@@ -1189,24 +1189,13 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     const workspaceIds = new Set(this.nodes.filter(n => n.type === NodeType.Workspace).map(n => n.id));
     const beforeOrphanRemoval = this.nodes.length;
 
-    console.log('[PASS 5] Checking for orphaned artifacts. Valid workspaces:', Array.from(workspaceIds));
-
     this.nodes = this.nodes.filter(node => {
       if (node.type === NodeType.Workspace) return true;
-      if (!node.workspaceId) {
-        console.error('[ORPHAN] Artifact without workspaceId:', node.name, NodeType[node.type], node.id);
-        return false;
-      }
-      if (!workspaceIds.has(node.workspaceId)) {
-        console.error('[ORPHAN] Artifact with non-existent workspace:', node.name, 'workspaceId:', node.workspaceId, 'artifactId:', node.id);
-        return false;
-      }
-      return true;
+      return node.workspaceId && workspaceIds.has(node.workspaceId);
     });
 
     if (beforeOrphanRemoval !== this.nodes.length) {
       console.log(`[Orphan Cleanup] Removed ${beforeOrphanRemoval - this.nodes.length} orphaned artifacts`);
-      // Re-filter links after removing orphans
       const nodeIds = new Set(this.nodes.map(n => n.id));
       validLinks = validLinks.filter(link => nodeIds.has(link.source) && nodeIds.has(link.target));
     }
@@ -1215,8 +1204,6 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
     const finalWorkspaces = this.nodes.filter(n => n.type === NodeType.Workspace);
     const finalUnassigned = finalWorkspaces.filter(n => n.metadata?.isUnassigned);
     const finalArtifacts = this.nodes.filter(n => n.type !== NodeType.Workspace);
-
-    // Log summary for debugging
     console.log(`✓ Loaded ${finalWorkspaces.length} workspaces (${finalUnassigned.length} unassigned), ${finalArtifacts.length} artifacts, ${validLinks.length} links`);
 
     return validLinks;
@@ -2378,33 +2365,17 @@ export class HomeContainerComponent implements OnInit, OnDestroy {
           return this.isWorkspaceVisible(node);
         }
 
-        // Handle artifact nodes - CRITICAL: Check if parent workspace is visible
-        if (node.workspaceId) {
-          const workspace = this.nodes.find(n => n.id === node.workspaceId && n.type === NodeType.Workspace);
-
-          if (!workspace) {
-            console.error('[VISIBILITY ERROR] Artifact has no workspace in graph:', {
-              artifactName: node.name,
-              artifactType: NodeType[node.type],
-              workspaceId: node.workspaceId,
-              totalWorkspaces: this.nodes.filter(n => n.type === NodeType.Workspace).length
-            });
-            return false;
-          }
-
-          // KEY FIX: If parent workspace is not visible, hide the artifact
-          const wsVisible = this.isWorkspaceVisible(workspace);
-          if (!wsVisible) {
-            console.log('[HIDE ARTIFACT] Hiding artifact because workspace hidden:', node.name, 'workspace:', workspace.name);
-          }
-          return wsVisible;
-        }
-
         // Artifact type filters
         if (node.type === NodeType.Lakehouse && !this.showLakehouses) return false;
         if (node.type === NodeType.DataWarehouse && !this.showWarehouses) return false;
         if (node.type === NodeType.Report && !this.showReports) return false;
         if (node.type === NodeType.SemanticModel && !this.showDatasets) return false;
+
+        // Handle artifact nodes — hide if parent workspace is hidden
+        if (node.workspaceId) {
+          const workspace = this.nodes.find(n => n.id === node.workspaceId && n.type === NodeType.Workspace);
+          if (!workspace || !this.isWorkspaceVisible(workspace)) return false;
+        }
 
         // Search filter
         if (this.searchTerm) {
