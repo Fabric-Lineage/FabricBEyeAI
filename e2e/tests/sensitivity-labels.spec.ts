@@ -14,9 +14,9 @@ test.describe('Sensitivity Labels', () => {
     await expect(canvas).toBeVisible();
   });
 
-  test('should show Labels button with badge', async ({ page }) => {
-    const labelsBtn = page.locator('button.control-btn', { hasText: 'Labels' });
-    await expect(labelsBtn).toBeVisible();
+  test('should show Endorsements button', async ({ page }) => {
+    const endorsementsBtn = page.locator('button.control-btn', { hasText: 'Endorsements' });
+    await expect(endorsementsBtn).toBeVisible();
   });
 
   test('should have toolbar buttons for graph interaction', async ({ page }) => {

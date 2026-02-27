@@ -32,7 +32,6 @@ test.describe('Toolbar', () => {
     await expect(page.locator('button.control-btn', { hasText: 'Legend' })).toBeVisible();
     await expect(page.locator('button.control-btn', { hasText: 'Data Flow' })).toBeVisible();
     await expect(page.locator('button.control-btn', { hasText: 'Endorsements' })).toBeVisible();
-    await expect(page.locator('button.control-btn', { hasText: 'Labels' })).toBeVisible();
     await expect(page.locator('button.control-btn', { hasText: 'Filters' })).toBeVisible();
   });
 });
